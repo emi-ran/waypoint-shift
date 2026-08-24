@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.waypointshift.ui.MainViewModel
+import com.waypointshift.ui.SavedLocationsTab
 import com.waypointshift.ui.WaypointShiftApp
 import com.waypointshift.ui.theme.WaypointShiftTheme
 
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
             val state by mainViewModel.uiState.collectAsStateWithLifecycle()
             var showSetup by rememberSaveable { mutableStateOf(!state.setupSeen) }
             var showNotificationRationale by rememberSaveable { mutableStateOf(false) }
+            var savedLocationsTab by rememberSaveable { mutableStateOf<SavedLocationsTab?>(null) }
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission(),
             ) { granted ->
@@ -76,6 +78,8 @@ class MainActivity : ComponentActivity() {
                     onStart = ::requestTransparentStart,
                     onStop = mainViewModel::stop,
                     onHelp = { showSetup = true },
+                    onFavorites = { savedLocationsTab = SavedLocationsTab.Favorites },
+                    onRecents = { savedLocationsTab = SavedLocationsTab.Recents },
                     showSetup = showSetup || state.showSetupAction,
                     onOpenDeveloperOptions = {
                         startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
@@ -93,6 +97,13 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onNotificationDismiss = { showNotificationRationale = false },
+                    savedLocationsTab = savedLocationsTab,
+                    onSelectSavedLocation = mainViewModel::selectSavedLocation,
+                    onRenameFavorite = mainViewModel::renameFavorite,
+                    onDeleteFavorite = mainViewModel::deleteFavorite,
+                    onClearRecents = mainViewModel::clearRecents,
+                    onSavedLocationsDismiss = { savedLocationsTab = null },
+                    onSaveFavorite = mainViewModel::saveFavorite,
                 )
             }
         }

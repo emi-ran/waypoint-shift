@@ -17,6 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -45,7 +49,15 @@ fun WaypointShiftApp(
     showNotificationRationale: Boolean = false,
     onNotificationContinue: () -> Unit = {},
     onNotificationDismiss: () -> Unit = {},
+    savedLocationsTab: SavedLocationsTab? = null,
+    onSelectSavedLocation: (com.waypointshift.model.SavedLocation) -> Unit = {},
+    onRenameFavorite: (String, String?) -> Unit = { _, _ -> },
+    onDeleteFavorite: (String) -> Unit = {},
+    onClearRecents: () -> Unit = {},
+    onSavedLocationsDismiss: () -> Unit = {},
+    onSaveFavorite: (String?) -> Unit = {},
 ) {
+    var showSaveFavorite by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -86,6 +98,10 @@ fun WaypointShiftApp(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onFavorites) { Text("Favorites") }
                 TextButton(onClick = onRecents) { Text("Recents") }
+                TextButton(
+                    onClick = { showSaveFavorite = true },
+                    enabled = state.selectedPoint != null,
+                ) { Text("Save favorite") }
             }
             state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             val active = state.sessionState == SessionState.Active
@@ -116,6 +132,23 @@ fun WaypointShiftApp(
         NotificationPermissionDialog(
             onContinue = onNotificationContinue,
             onDismiss = onNotificationDismiss,
+        )
+    }
+    savedLocationsTab?.let { tab ->
+        SavedLocationsSheet(
+            state = state,
+            initialTab = tab,
+            onSelect = onSelectSavedLocation,
+            onRename = onRenameFavorite,
+            onDelete = onDeleteFavorite,
+            onClearRecents = onClearRecents,
+            onDismiss = onSavedLocationsDismiss,
+        )
+    }
+    if (showSaveFavorite) {
+        FavoriteLabelDialog(
+            onSave = onSaveFavorite,
+            onDismiss = { showSaveFavorite = false },
         )
     }
 }

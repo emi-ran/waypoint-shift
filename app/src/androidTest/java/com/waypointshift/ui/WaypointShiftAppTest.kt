@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.waypointshift.model.GeoPoint
+import com.waypointshift.model.SavedLocation
 import org.junit.Rule
 import org.junit.Test
 
@@ -33,6 +34,7 @@ class WaypointShiftAppTest {
         composeRule.onNodeWithText("Start").assertIsEnabled()
         composeRule.onNodeWithText("Favorites").assertIsDisplayed()
         composeRule.onNodeWithText("Recents").assertIsDisplayed()
+        composeRule.onNodeWithText("Save favorite").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Setup help").assertIsDisplayed()
     }
 
@@ -89,5 +91,22 @@ class WaypointShiftAppTest {
         composeRule.onNodeWithText("Notification permission required").assertIsDisplayed()
         composeRule.onNodeWithText("Waypoint Shift requires notification permission before Start so active mocking stays clearly visible.").assertIsDisplayed()
         composeRule.onNodeWithText("Continue").assertIsDisplayed()
+    }
+
+    @Test
+    fun savedLocationsExposeSelectionAndValidRowActions() {
+        val favorite = SavedLocation("fav-1", "Home", GeoPoint.of(41.0, 29.0), 1L)
+        val recent = SavedLocation("recent-1", null, GeoPoint.of(40.0, 28.0), 2L)
+        composeRule.setContent {
+            WaypointShiftApp(
+                state = MainUiState(favorites = listOf(favorite), recents = listOf(recent)),
+                savedLocationsTab = SavedLocationsTab.Favorites,
+            )
+        }
+
+        composeRule.onNodeWithText("Home").assertIsDisplayed()
+        composeRule.onNodeWithText("Rename").assertIsDisplayed()
+        composeRule.onNodeWithText("Delete").assertIsDisplayed()
+        composeRule.onNodeWithText("Clear recents").assertDoesNotExist()
     }
 }
