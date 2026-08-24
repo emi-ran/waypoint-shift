@@ -5,28 +5,35 @@ import androidx.core.content.ContextCompat
 import com.waypointshift.model.GeoPoint
 import kotlinx.coroutines.flow.StateFlow
 
+interface MockServiceControl {
+    val status: StateFlow<MockServiceStatus>
+    fun start(point: GeoPoint)
+    fun update(point: GeoPoint)
+    fun stop()
+}
+
 class MockServiceController(
     context: Context,
     private val statusStore: MockServiceStatusStore,
-) {
+) : MockServiceControl {
     private val applicationContext = context.applicationContext
 
-    val status: StateFlow<MockServiceStatus> = statusStore.status
+    override val status: StateFlow<MockServiceStatus> = statusStore.status
 
-    fun start(point: GeoPoint) {
+    override fun start(point: GeoPoint) {
         ContextCompat.startForegroundService(
             applicationContext,
             MockServiceCommand.startIntent(applicationContext, point),
         )
     }
 
-    fun update(point: GeoPoint) {
+    override fun update(point: GeoPoint) {
         applicationContext.startService(
             MockServiceCommand.updateIntent(applicationContext, point),
         )
     }
 
-    fun stop() {
+    override fun stop() {
         applicationContext.startService(MockServiceCommand.stopIntent(applicationContext))
     }
 }
