@@ -3,6 +3,7 @@ package com.waypointshift
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -15,6 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
             val state by mainViewModel.uiState.collectAsStateWithLifecycle()
             var showSetup by rememberSaveable { mutableStateOf(false) }
             var showNotificationRationale by rememberSaveable { mutableStateOf(false) }
+            var showLocationDisabled by rememberSaveable { mutableStateOf(false) }
             var savedLocationsTab by rememberSaveable { mutableStateOf<SavedLocationsTab?>(null) }
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission(),
@@ -57,6 +62,11 @@ class MainActivity : ComponentActivity() {
             }
 
             fun requestTransparentStart() {
+                val locationManager = getSystemService(LocationManager::class.java)
+                if (!locationManager.isLocationEnabled) {
+                    showLocationDisabled = true
+                    return
+                }
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                     ContextCompat.checkSelfPermission(
                         this,
@@ -109,6 +119,20 @@ class MainActivity : ComponentActivity() {
                     onSavedLocationsDismiss = { savedLocationsTab = null },
                     onSaveFavorite = mainViewModel::saveFavorite,
                 )
+                if (showLocationDisabled) {
+                    AlertDialog(
+                        onDismissRequest = { showLocationDisabled = false },
+                        title = { Text("Turn on device location") },
+                        text = { Text("Turn on Android Location before starting mock location. Waypoint Shift does not enable it automatically.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showLocationDisabled = false
+                                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                            }) { Text("Open Location Settings") }
+                        },
+                        dismissButton = { TextButton(onClick = { showLocationDisabled = false }) { Text("Cancel") } },
+                    )
+                }
             }
         }
     }
