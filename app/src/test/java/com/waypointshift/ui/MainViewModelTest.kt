@@ -52,6 +52,24 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `marker preview does not update active service until drag commits`() = runTest {
+        val fixture = fixture()
+        val active = GeoPoint.of(41.0, 29.0)
+        val preview = GeoPoint.of(40.0, 28.0)
+        fixture.viewModel.selectPoint(active)
+        fixture.controller.status.value = MockServiceStatus.Active(active)
+        runCurrent()
+
+        fixture.viewModel.previewPoint(preview)
+        assertEquals(preview, fixture.viewModel.uiState.value.previewPoint)
+        assertTrue(fixture.controller.updates.isEmpty())
+
+        fixture.viewModel.commitPreviewPoint()
+        assertEquals(preview, fixture.viewModel.uiState.value.selectedPoint)
+        assertEquals(listOf(preview), fixture.controller.updates)
+    }
+
+    @Test
     fun `start records recent only after active status and active selection updates once`() = runTest {
         val fixture = fixture()
         val first = GeoPoint.of(41.0, 29.0)

@@ -13,6 +13,7 @@ enum class SessionState {
 
 data class MainUiState(
     val selectedPoint: GeoPoint? = null,
+    val previewPoint: GeoPoint? = null,
     val latitudeInput: String = "",
     val longitudeInput: String = "",
     val latitudeError: String? = null,

@@ -45,6 +45,7 @@ class MainViewModel(
         update {
             copy(
                 selectedPoint = point,
+                previewPoint = null,
                 latitudeInput = point.formattedLatitude,
                 longitudeInput = point.formattedLongitude,
                 latitudeError = null,
@@ -52,6 +53,14 @@ class MainViewModel(
             )
         }
         if (wasActive) serviceController.update(point)
+    }
+
+    fun previewPoint(point: GeoPoint) {
+        update { copy(previewPoint = point) }
+    }
+
+    fun commitPreviewPoint() {
+        mutableUiState.value.previewPoint?.let(::selectPoint)
     }
 
     fun updateManualInputs(latitude: String, longitude: String) {
