@@ -41,9 +41,7 @@
                 android:value="Continuously publishes a user-selected mock location while an ongoing notification is visible" />
         </service>
 
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${MAPS_API_KEY}" />
+
     </application>
 
 </manifest>

@@ -1,26 +1,22 @@
 package com.waypointshift.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
+import android.graphics.Color
+import android.view.MotionEvent
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import com.waypointshift.model.GeoPoint
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint as OsmGeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 @Composable
 fun MapScreen(
@@ -32,74 +28,55 @@ fun MapScreen(
     modifier: Modifier = Modifier,
 ) {
     val displayedPoint = previewPoint ?: selectedPoint
-    val initial = displayedPoint?.toLatLng() ?: DEFAULT_CENTER
-    val cameraState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initial, DEFAULT_ZOOM)
-    }
-    var mapLoaded by remember { mutableStateOf(false) }
-
-    Box(modifier = modifier) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraState,
-            onMapClick = { latLng -> onMapPointSelected(latLng.toGeoPoint()) },
-            onMapLoaded = { mapLoaded = true },
-        ) {
-            displayedPoint?.let { point ->
-                DraggableSelectionMarker(
-                    point = point,
-                    onPreview = onMarkerPreview,
-                    onDragEnd = onMarkerDragEnd,
-                )
-            }
-        }
-        if (!mapLoaded) {
-            Text(
-                text = "Map loading. Manual coordinates remain available.",
-                modifier = Modifier.align(Alignment.Center),
+    val context = LocalContext.current
+    val mapView = remember(context) {
+        Configuration.getInstance().userAgentValue = "WaypointShift/0.1"
+        MapView(context).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            controller.setZoom(DEFAULT_ZOOM)
+            controller.setCenter(OsmGeoPoint(DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude))
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
             )
-        }
-    }
-
-    LaunchedEffect(selectedPoint) {
-        selectedPoint?.let {
-            cameraState.animate(CameraUpdateFactory.newLatLng(it.toLatLng()))
-        }
-    }
-}
-
-@Composable
-private fun DraggableSelectionMarker(
-    point: GeoPoint,
-    onPreview: (GeoPoint) -> Unit,
-    onDragEnd: () -> Unit,
-) {
-    val markerState = remember { MarkerState(position = point.toLatLng()) }
-    LaunchedEffect(point) {
-        if (!markerState.isDragging) markerState.position = point.toLatLng()
-    }
-    LaunchedEffect(markerState) {
-        var wasDragging = false
-        snapshotFlow { markerState.position to markerState.isDragging }
-            .collect { (position, isDragging) ->
-                if (isDragging) onPreview(position.toGeoPoint())
-                if (wasDragging && !isDragging) {
-                    onPreview(position.toGeoPoint())
-                    onDragEnd()
+            setOnTouchListener { _, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    projection.fromPixels(event.x.toInt(), event.y.toInt())
+                        .let { it as OsmGeoPoint }
+                        .also { onMapPointSelected(GeoPoint.of(it.latitude, it.longitude)) }
                 }
-                wasDragging = isDragging
+                false
             }
+        }
     }
-    Marker(
-        state = markerState,
-        draggable = true,
-        title = "Selected mock location",
-    )
+
+    AndroidView(factory = { mapView }, modifier = modifier)
+    LaunchedEffect(displayedPoint) {
+        mapView.overlays.removeAll { it is Marker }
+        displayedPoint?.let { point ->
+            Marker(mapView).apply {
+                position = OsmGeoPoint(point.latitude, point.longitude)
+                title = "Selected mock location"
+                isDraggable = true
+                setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
+                    override fun onMarkerDrag(marker: Marker) {
+                        onMarkerPreview(GeoPoint.of(marker.position.latitude, marker.position.longitude))
+                    }
+                    override fun onMarkerDragEnd(marker: Marker) {
+                        onMarkerPreview(GeoPoint.of(marker.position.latitude, marker.position.longitude))
+                        onMarkerDragEnd()
+                    }
+                    override fun onMarkerDragStart(marker: Marker) = Unit
+                })
+                mapView.overlays.add(this)
+            }
+            mapView.controller.animateTo(OsmGeoPoint(point.latitude, point.longitude))
+        }
+        mapView.invalidate()
+    }
+    DisposableEffect(mapView) { onDispose { mapView.onDetach() } }
 }
 
-private fun GeoPoint.toLatLng(): LatLng = LatLng(latitude, longitude)
-
-private fun LatLng.toGeoPoint(): GeoPoint = GeoPoint.of(latitude, longitude)
-
-private val DEFAULT_CENTER = LatLng(41.0082, 28.9784)
-private const val DEFAULT_ZOOM = 12f
+private val DEFAULT_CENTER = GeoPoint.of(41.0082, 28.9784)
+private const val DEFAULT_ZOOM = 12.0

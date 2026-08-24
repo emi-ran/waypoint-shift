@@ -58,6 +58,7 @@ fun WaypointShiftApp(
     onSaveFavorite: (String?) -> Unit = {},
 ) {
     var showSaveFavorite by remember { mutableStateOf(false) }
+    var showAddressSearch by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,7 +81,8 @@ fun WaypointShiftApp(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Tap map or drag marker to select mock coordinate.")
-            Text("Manual coordinates remain available if map tiles fail")
+            TextButton(onClick = { showAddressSearch = true }) { Text("Search address or place") }
+            Text("OpenStreetMap map and manual coordinates work without an API key.")
             MapScreen(
                 selectedPoint = state.selectedPoint,
                 previewPoint = state.previewPoint,
@@ -155,6 +157,15 @@ fun WaypointShiftApp(
         FavoriteLabelDialog(
             onSave = onSaveFavorite,
             onDismiss = { showSaveFavorite = false },
+        )
+    }
+    if (showAddressSearch) {
+        AddressSearchDialog(
+            onSelect = {
+                onMapPointSelected(it)
+                showAddressSearch = false
+            },
+            onDismiss = { showAddressSearch = false },
         )
     }
 }
