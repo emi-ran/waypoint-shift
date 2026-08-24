@@ -48,6 +48,25 @@ class LocationDiskDtoTest {
     }
 
     @Test
+    fun `defaults last-used timestamp for older v1 JSON`() {
+        val rawJson = """
+            [
+              {
+                "id": "fav-v1",
+                "latitude": 41.0,
+                "longitude": 29.0,
+                "createdAtEpochMillis": 1724457600000
+              }
+            ]
+        """.trimIndent()
+
+        val restored = LocationDiskDto.decodeList(rawJson).single()
+
+        assertEquals(1724457600000L, restored.createdAtEpochMillis)
+        assertEquals(1724457600000L, restored.lastUsedAtEpochMillis)
+    }
+
+    @Test
     fun `recovers from malformed JSON to empty list without crashing and records issue`() {
         var loggedError: Throwable? = null
         val malformedJson = "{ broken json: true "
