@@ -1,0 +1,25 @@
+# Android / Gradle
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+
+# Signing and API secrets
+*.jks
+*.keystore
+keystore.properties
+secrets/
+
+# Native and OS
+.externalNativeBuild/
+.cxx/
+.DS_Store
+
+# Generated logs
+*.log
+capture/
+
+# Android SDK setup
+android-sdk.env
