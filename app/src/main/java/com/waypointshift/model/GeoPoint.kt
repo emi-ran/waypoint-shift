@@ -14,7 +14,7 @@ data class GeoPoint private constructor(
         get() = formatCoordinate(longitude)
 
     companion object {
-        private val dotDecimalPattern = Regex("[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)")
+        private val dotDecimalPattern = Regex("[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)")
 
         fun of(latitude: Double, longitude: Double): GeoPoint {
             validate(latitude, CoordinateComponent.LATITUDE, -90.0..90.0)

@@ -8,5 +8,6 @@
 - Gradle 9.5.0 wrapper with verified distribution checksum.
 - Validated coordinate value object with canonical six-decimal formatting.
 - Coordinate unit tests and local-data backup exclusions.
+- Manual coordinate parsing accepts valid trailing decimal input such as `41.` while retaining range and finite-value checks.
 
 Map UI and mock-location service remain intentionally outside this foundation phase.

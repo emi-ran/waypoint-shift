@@ -9,7 +9,7 @@ Repository currently contains Phase 0/1 foundation only:
 - Android API 36 app bootstrap with Kotlin, Jetpack Compose, and Material 3
 - Gradle 9.5.0 wrapper with pinned distribution checksum
 - Local light/dark Compose theme and placeholder launch screen
-- Validated `GeoPoint` domain model with locale-independent parsing and six-decimal formatting
+- Validated `GeoPoint` domain model with locale-independent signed decimal parsing, including trailing decimal points, and six-decimal formatting
 - Unit tests for coordinate boundaries, malformed text, and non-finite values
 - Backup exclusions prepared for future local coordinate preferences
 

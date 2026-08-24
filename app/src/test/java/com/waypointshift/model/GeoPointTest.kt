@@ -60,6 +60,14 @@ class GeoPointTest {
     }
 
     @Test
+    fun `parses coordinates with trailing decimal points`() {
+        val point = GeoPoint.parse("+41.", "-28.")
+
+        assertEquals(41.0, point.latitude, 0.0)
+        assertEquals(-28.0, point.longitude, 0.0)
+    }
+
+    @Test
     fun `formats coordinates canonically with six decimal places`() {
         val point = GeoPoint.of(-0.0, 28.9)
 
