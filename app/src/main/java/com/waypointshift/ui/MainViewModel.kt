@@ -92,6 +92,7 @@ class MainViewModel(
     }
 
     fun markSetupSeen() {
+        update { copy(setupSeen = true, showSetupAction = false) }
         coroutineScope.launch { repository.setOnboardingSeen(true) }
     }
 

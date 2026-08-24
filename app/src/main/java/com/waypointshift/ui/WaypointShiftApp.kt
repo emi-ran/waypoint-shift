@@ -38,6 +38,13 @@ fun WaypointShiftApp(
     onHelp: () -> Unit = {},
     onFavorites: () -> Unit = {},
     onRecents: () -> Unit = {},
+    showSetup: Boolean = false,
+    onOpenDeveloperOptions: () -> Unit = {},
+    onSetupRetry: () -> Unit = {},
+    onSetupDismiss: () -> Unit = {},
+    showNotificationRationale: Boolean = false,
+    onNotificationContinue: () -> Unit = {},
+    onNotificationDismiss: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -97,5 +104,18 @@ fun WaypointShiftApp(
                 ) { Text("Start") }
             }
         }
+    }
+    if (showSetup) {
+        DeveloperOptionsSheet(
+            onOpenDeveloperOptions = onOpenDeveloperOptions,
+            onRetry = onSetupRetry,
+            onDismiss = onSetupDismiss,
+        )
+    }
+    if (showNotificationRationale) {
+        NotificationPermissionDialog(
+            onContinue = onNotificationContinue,
+            onDismiss = onNotificationDismiss,
+        )
     }
 }
