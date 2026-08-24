@@ -28,7 +28,8 @@ class WaypointShiftAppTest {
             )
         }
 
-        composeRule.onNodeWithText("Manual coordinates remain available if map tiles fail").assertIsDisplayed()
+        composeRule.onNodeWithText("Search address or place").assertIsDisplayed()
+        composeRule.onNodeWithText("Go to current location").assertIsDisplayed()
         composeRule.onNodeWithText("Latitude").assertTextContains("Latitude")
         composeRule.onNodeWithText("Longitude").assertTextContains("Longitude")
         composeRule.onNodeWithText("Start").assertIsEnabled()

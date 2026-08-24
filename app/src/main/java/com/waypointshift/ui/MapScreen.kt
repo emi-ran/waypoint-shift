@@ -34,6 +34,7 @@ fun MapScreen(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            setMapOrientation(0f)
             controller.setZoom(DEFAULT_ZOOM)
             controller.setCenter(OsmGeoPoint(DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude))
             layoutParams = FrameLayout.LayoutParams(

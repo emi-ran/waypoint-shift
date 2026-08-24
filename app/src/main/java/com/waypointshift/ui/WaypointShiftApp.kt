@@ -56,6 +56,7 @@ fun WaypointShiftApp(
     onClearRecents: () -> Unit = {},
     onSavedLocationsDismiss: () -> Unit = {},
     onSaveFavorite: (String?) -> Unit = {},
+    onGoToCurrentLocation: () -> Unit = {},
 ) {
     var showSaveFavorite by remember { mutableStateOf(false) }
     var showAddressSearch by remember { mutableStateOf(false) }
@@ -81,7 +82,10 @@ fun WaypointShiftApp(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Tap map or drag marker to select mock coordinate.")
-            TextButton(onClick = { showAddressSearch = true }) { Text("Search address or place") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { showAddressSearch = true }) { Text("Search address or place") }
+                TextButton(onClick = onGoToCurrentLocation) { Text("Go to current location") }
+            }
             Text("OpenStreetMap map and manual coordinates work without an API key.")
             MapScreen(
                 selectedPoint = state.selectedPoint,

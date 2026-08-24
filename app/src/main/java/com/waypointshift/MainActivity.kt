@@ -60,6 +60,31 @@ class MainActivity : ComponentActivity() {
                 showNotificationRationale = !granted
                 if (granted) mainViewModel.start()
             }
+            fun moveToCurrentLocation() {
+                val locationManager = getSystemService(LocationManager::class.java)
+                val location = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                    .mapNotNull { provider -> runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull() }
+                    .maxByOrNull { it.time }
+                location?.let { mainViewModel.selectPoint(com.waypointshift.model.GeoPoint.of(it.latitude, it.longitude)) }
+            }
+            val locationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions(),
+            ) { granted ->
+                if (granted.values.any { it }) moveToCurrentLocation()
+            }
+
+            fun requestCurrentLocation() {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    moveToCurrentLocation()
+                } else {
+                    locationPermissionLauncher.launch(arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ))
+                }
+            }
 
             fun requestTransparentStart() {
                 val locationManager = getSystemService(LocationManager::class.java)
@@ -118,6 +143,7 @@ class MainActivity : ComponentActivity() {
                     onClearRecents = mainViewModel::clearRecents,
                     onSavedLocationsDismiss = { savedLocationsTab = null },
                     onSaveFavorite = mainViewModel::saveFavorite,
+                    onGoToCurrentLocation = ::requestCurrentLocation,
                 )
                 if (showLocationDisabled) {
                     AlertDialog(
