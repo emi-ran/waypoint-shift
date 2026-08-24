@@ -25,11 +25,12 @@ android {
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "com.waypointshift"
+        // New app ID avoids stale OEM Settings filtering for the earlier package.
+        applicationId = "com.waypointshift.location"
         minSdk = 23
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] = readMapsApiKey().orEmpty()
