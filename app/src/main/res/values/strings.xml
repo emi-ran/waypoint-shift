@@ -2,4 +2,10 @@
 <resources>
     <string name="app_name">Waypoint Shift</string>
     <string name="foundation_status">Waypoint Shift foundation ready</string>
+    <string name="mock_notification_channel_name">Active mock location</string>
+    <string name="mock_notification_channel_description">Shows when Waypoint Shift is publishing a mock location</string>
+    <string name="mock_notification_starting_title">Starting mock location</string>
+    <string name="mock_notification_active_title">Mock location active</string>
+    <string name="mock_notification_coordinates">Latitude %1$s, longitude %2$s</string>
+    <string name="mock_notification_stop_action">Stop</string>
 </resources>
