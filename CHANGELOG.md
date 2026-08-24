@@ -13,5 +13,21 @@
 - Tolerant JSON decoding ignoring unknown future fields and recovering gracefully from corrupt preference data.
 - Stable-ID favorite management with label trimming capped at 60 Unicode code points.
 - Normalized 6-decimal recents deduplication, newest-first ordering, and 20-item cap.
+- Hot repository `StateFlow` snapshots for favorites, recents, and onboarding state.
+- Transparent Google Play services mock-location client and safe one-second publication loop.
+- User-visible `specialUse` foreground service with exact-coordinate notification and Stop action.
+- ViewModel-driven map tap, marker drag-end, and validated manual coordinate selection.
+- Developer Options onboarding plus Android 13+ notification permission gate before Start.
+- Local favorite creation, selection, rename, confirmed delete, and recent selection/clear UI.
 
-Map UI and mock-location service remain intentionally outside this foundation phase.
+### Changed
+
+- Favorite updates and repeated recent selections now preserve original creation time while recording latest use time.
+- Application DataStore access now uses one process-wide delegated instance.
+- Repository mutations return only after public `StateFlow` snapshots reflect committed storage state.
+
+### Privacy
+
+- No real/background location permission, tracking, analytics, telemetry, accounts, backend, or cloud sync.
+- Favorites and recents remain local and excluded from Android backup.
+- Mock state remains visible to Android and other apps; app never changes Developer Options or conceals mock status.
