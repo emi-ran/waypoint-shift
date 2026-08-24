@@ -1,7 +1,6 @@
 package com.waypointshift.ui
 
 import android.graphics.Color
-import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
@@ -41,14 +40,14 @@ fun MapScreen(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
-            setOnTouchListener { _, event ->
-                if (event.action == MotionEvent.ACTION_UP) {
-                    projection.fromPixels(event.x.toInt(), event.y.toInt())
+            overlays.add(object : org.osmdroid.views.overlay.Overlay() {
+                override fun onSingleTapConfirmed(event: android.view.MotionEvent, map: MapView): Boolean {
+                    map.projection.fromPixels(event.x.toInt(), event.y.toInt())
                         .let { it as OsmGeoPoint }
                         .also { onMapPointSelected(GeoPoint.of(it.latitude, it.longitude)) }
+                    return true
                 }
-                false
-            }
+            })
         }
     }
 
