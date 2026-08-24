@@ -5,6 +5,7 @@ import com.waypointshift.model.SavedLocation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -77,7 +78,9 @@ class LocationRepositoryImpl(
             LocationDiskDto.encodeList(updated)
         }
 
-        return checkNotNull(resultItem)
+        val savedItem = checkNotNull(resultItem)
+        favorites.first { items -> items.any { it == savedItem } }
+        return savedItem
     }
 
     private fun normalizeLabel(label: String?): String? {
@@ -93,11 +96,14 @@ class LocationRepositoryImpl(
 
     override suspend fun deleteFavorite(id: String) {
         require(id.isNotBlank()) { "Favorite ID cannot be blank" }
+        var updatedIds: Set<String> = emptySet()
         storage.updateFavorites { raw ->
             val current = LocationDiskDto.decodeList(raw, onStorageError)
             val updated = current.filterNot { it.id == id }
+            updatedIds = updated.mapTo(mutableSetOf()) { it.id }
             LocationDiskDto.encodeList(updated)
         }
+        favorites.first { items -> items.mapTo(mutableSetOf()) { it.id } == updatedIds }
     }
 
     override suspend fun addRecent(point: GeoPoint, timestampEpochMillis: Long): SavedLocation {
@@ -132,17 +138,21 @@ class LocationRepositoryImpl(
             LocationDiskDto.encodeList(updated)
         }
 
-        return checkNotNull(resultItem)
+        val recentItem = checkNotNull(resultItem)
+        recents.first { items -> items.firstOrNull() == recentItem }
+        return recentItem
     }
 
     override suspend fun clearRecents() {
         storage.updateRecents {
             LocationDiskDto.encodeList(emptyList())
         }
+        recents.first { it.isEmpty() }
     }
 
     override suspend fun setOnboardingSeen(seen: Boolean) {
         storage.setOnboardingSeen(seen)
+        onboardingSeen.first { it == seen }
     }
 
     companion object {

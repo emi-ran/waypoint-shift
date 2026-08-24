@@ -3,12 +3,8 @@ package com.waypointshift.data
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.model.SavedLocation
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LocationRepositoryTest {
@@ -20,10 +16,26 @@ class LocationRepositoryTest {
             scope = backgroundScope,
         )
 
-        // StateFlow properties should have direct .value accessible without suspending
         assertEquals(emptyList<SavedLocation>(), repository.favorites.value)
         assertEquals(emptyList<SavedLocation>(), repository.recents.value)
         assertEquals(false, repository.onboardingSeen.value)
+    }
+
+    @Test
+    fun `updates StateFlow snapshots after repository mutations`() = runTest {
+        val repository = LocationRepositoryImpl(
+            storage = InMemoryLocationPreferencesStorage(),
+            scope = backgroundScope,
+        )
+        val point = GeoPoint.of(41.0082, 28.9784)
+
+        val favorite = repository.saveFavorite("fav-1", "Ayasofya", point, 1000L)
+        val recent = repository.addRecent(point, 2000L)
+        repository.setOnboardingSeen(true)
+
+        assertEquals(listOf(favorite), repository.favorites.value)
+        assertEquals(listOf(recent), repository.recents.value)
+        assertEquals(true, repository.onboardingSeen.value)
     }
 
     @Test
@@ -48,7 +60,6 @@ class LocationRepositoryTest {
         assertEquals(1000L, added.lastUsedAtEpochMillis)
         assertEquals(listOf(added), repository.favorites.first { it.isNotEmpty() })
 
-        // Rename should preserve original createdAtEpochMillis while updating lastUsedAtEpochMillis
         val renamed = repository.saveFavorite(
             id = "fav-1",
             label = "Ayasofya",
@@ -74,17 +85,16 @@ class LocationRepositoryTest {
         )
 
         val point = GeoPoint.of(41.0082, 28.9784)
-        assertThrows(IllegalArgumentException::class.java) {
-            org.junit.Assert.assertNotNull(point)
-            kotlinx.coroutines.runBlocking {
-                repository.saveFavorite(
-                    id = "   ",
-                    label = "Test",
-                    point = point,
-                    timestampEpochMillis = 1000L,
-                )
-            }
-        }
+        val error = runCatching {
+            repository.saveFavorite(
+                id = "   ",
+                label = "Test",
+                point = point,
+                timestampEpochMillis = 1000L,
+            )
+        }.exceptionOrNull()
+
+        assertEquals(IllegalArgumentException::class.java, error?.javaClass)
     }
 
     @Test
@@ -96,7 +106,6 @@ class LocationRepositoryTest {
         )
 
         val point = GeoPoint.of(41.0082, 28.9784)
-        // 70 emojis/characters to test 60 unicode code points cap
         val longLabel = "📍" + "A".repeat(65)
 
         val fav1 = repository.saveFavorite(
@@ -127,7 +136,6 @@ class LocationRepositoryTest {
             scope = backgroundScope,
         )
 
-        // Add 25 distinct locations
         for (i in 1..25) {
             repository.addRecent(
                 point = GeoPoint.of(40.0 + (i * 0.001), 29.0),
@@ -137,11 +145,9 @@ class LocationRepositoryTest {
 
         var recents = repository.recents.first { it.size == 20 }
         assertEquals(20, recents.size)
-        // Newest should be index 25
         assertEquals(GeoPoint.of(40.025, 29.0), recents.first().point)
         assertEquals(1025L, recents.first().lastUsedAtEpochMillis)
 
-        // Add coordinate identical when normalized to 6 decimals (e.g. 40.0250000001 vs 40.025)
         val reAdded = repository.addRecent(
             point = GeoPoint.of(40.0250000001, 29.0000000002),
             timestampEpochMillis = 5000L,
@@ -153,7 +159,6 @@ class LocationRepositoryTest {
         assertEquals(1025L, recents.first().createdAtEpochMillis)
         assertEquals(5000L, recents.first().lastUsedAtEpochMillis)
         assertEquals(GeoPoint.of(40.025, 29.0), recents.first().point)
-        // Count entries matching this normalized coordinate should be 1
         assertEquals(1, recents.count { it.point.formattedLatitude == "40.025000" && it.point.formattedLongitude == "29.000000" })
 
         repository.clearRecents()
