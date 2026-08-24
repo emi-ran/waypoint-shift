@@ -43,6 +43,15 @@ fun MapScreen(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN,
+                    android.view.MotionEvent.ACTION_MOVE -> view.parent?.requestDisallowInterceptTouchEvent(true)
+                    android.view.MotionEvent.ACTION_UP,
+                    android.view.MotionEvent.ACTION_CANCEL -> view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
             overlays.add(object : org.osmdroid.views.overlay.Overlay() {
                 override fun onSingleTapConfirmed(event: android.view.MotionEvent, map: MapView): Boolean {
                     map.projection.fromPixels(event.x.toInt(), event.y.toInt())
