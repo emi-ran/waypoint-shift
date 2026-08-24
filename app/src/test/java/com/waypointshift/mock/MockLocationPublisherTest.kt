@@ -45,7 +45,10 @@ class MockLocationPublisherTest {
 
         assertEquals(1, client.calls.count { it == "enable" })
         assertEquals(2, client.calls.count { it == "publish:$second" })
-        assertEquals(MockPublisherStatus.Active(second), publisher.status.value)
+        assertEquals(
+            MockPublisherStatus.Active(second, MockLocationEngine.FUSED),
+            publisher.status.value,
+        )
     }
 
     @Test
@@ -117,8 +120,9 @@ class MockLocationPublisherTest {
         val calls = mutableListOf<String>()
         var publishCount = 0
 
-        override suspend fun enable() {
+        override suspend fun enable(): MockLocationEngine {
             calls += "enable"
+            return MockLocationEngine.FUSED
         }
 
         override suspend fun publish(point: GeoPoint, wallTimeMillis: Long, elapsedRealtimeNanos: Long) {
@@ -135,7 +139,7 @@ class MockLocationPublisherTest {
     private class SuspendingEnableClient : MockLocationClient {
         var disableCount = 0
 
-        override suspend fun enable() {
+        override suspend fun enable(): MockLocationEngine {
             kotlinx.coroutines.awaitCancellation()
         }
 

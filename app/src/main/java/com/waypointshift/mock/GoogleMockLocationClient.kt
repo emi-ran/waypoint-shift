@@ -43,7 +43,7 @@ class GoogleMockLocationClient(
         accessChecker = AndroidMockLocationAccessChecker(context.applicationContext),
     )
 
-    override suspend fun enable() {
+    override suspend fun enable(): MockLocationEngine {
         if (accessChecker.check() == MockLocationAccess.NOT_ALLOWED) {
             throw MockLocationClientException(
                 kind = MockFailureKind.APP_OP_NOT_ALLOWED,
@@ -59,6 +59,7 @@ class GoogleMockLocationClient(
             )
         }
         runOperation(MockClientOperation.ENABLE) { gateway.setMockMode(true) }
+        return MockLocationEngine.FUSED
     }
 
     override suspend fun publish(

@@ -32,7 +32,7 @@ object AndroidMockClock : MockClock {
 sealed interface MockPublisherStatus {
     data object Idle : MockPublisherStatus
     data class Starting(val point: GeoPoint) : MockPublisherStatus
-    data class Active(val point: GeoPoint) : MockPublisherStatus
+    data class Active(val point: GeoPoint, val engine: MockLocationEngine) : MockPublisherStatus
     data class Failed(val failure: MockSessionFailure) : MockPublisherStatus
 }
 
@@ -61,6 +61,7 @@ class MockLocationPublisher(
     private val mutableStatus = MutableStateFlow<MockPublisherStatus>(MockPublisherStatus.Idle)
     private var publicationJob: Job? = null
     private var currentPoint: GeoPoint? = null
+    private var activeEngine: MockLocationEngine? = null
     private var cleanupRequired = false
 
     override val status: StateFlow<MockPublisherStatus> = mutableStatus.asStateFlow()
@@ -76,7 +77,7 @@ class MockLocationPublisher(
                 try {
                     publish(point)
                     currentPoint = point
-                    mutableStatus.value = MockPublisherStatus.Active(point)
+                    mutableStatus.value = MockPublisherStatus.Active(point, checkNotNull(activeEngine))
                 } catch (error: Throwable) {
                     publicationJob?.cancelAndJoin()
                     failAndCleanup(error, operationFor(error, MockClientOperation.PUBLISH))
@@ -87,10 +88,10 @@ class MockLocationPublisher(
             mutableStatus.value = MockPublisherStatus.Starting(point)
             cleanupRequired = true
             try {
-                client.enable()
+                activeEngine = client.enable()
                 publish(point)
                 currentPoint = point
-                mutableStatus.value = MockPublisherStatus.Active(point)
+                mutableStatus.value = MockPublisherStatus.Active(point, checkNotNull(activeEngine))
                 publicationJob = scope.launch { publicationLoop() }
             } catch (cancellation: CancellationException) {
                 cleanupAfterCancellation()
@@ -106,6 +107,7 @@ class MockLocationPublisher(
             publicationJob?.cancelAndJoin()
             publicationJob = null
             currentPoint = null
+            activeEngine = null
 
             if (!cleanupRequired) {
                 if (mutableStatus.value !is MockPublisherStatus.Failed) {
@@ -170,6 +172,7 @@ class MockLocationPublisher(
 
     private suspend fun failAndCleanup(error: Throwable, operation: MockClientOperation) {
         currentPoint = null
+        activeEngine = null
         publicationJob = null
         val cleanupError = disableSafely()
         cleanupRequired = false
@@ -186,6 +189,7 @@ class MockLocationPublisher(
 
     private suspend fun cleanupAfterCancellation() {
         currentPoint = null
+        activeEngine = null
         publicationJob = null
         disableSafely()
         cleanupRequired = false

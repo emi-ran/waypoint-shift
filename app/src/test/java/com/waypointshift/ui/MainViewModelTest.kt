@@ -6,6 +6,7 @@ import com.waypointshift.mock.MockClientOperation
 import com.waypointshift.mock.MockFailureKind
 import com.waypointshift.mock.MockLocationAccess
 import com.waypointshift.mock.MockLocationAccessChecker
+import com.waypointshift.mock.MockLocationEngine
 import com.waypointshift.mock.MockSessionFailure
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.service.MockServiceControl
@@ -119,7 +120,7 @@ class MainViewModelTest {
         val active = GeoPoint.of(41.0, 29.0)
         val preview = GeoPoint.of(40.0, 28.0)
         fixture.viewModel.selectPoint(active)
-        fixture.controller.status.value = MockServiceStatus.Active(active)
+        fixture.controller.status.value = MockServiceStatus.Active(active, MockLocationEngine.FUSED)
         runCurrent()
 
         fixture.viewModel.previewPoint(preview)
@@ -144,9 +145,10 @@ class MainViewModelTest {
         assertEquals(listOf(first), fixture.controller.starts)
         assertTrue(fixture.repository.recents.value.isEmpty())
 
-        fixture.controller.status.value = MockServiceStatus.Active(first)
+        fixture.controller.status.value = MockServiceStatus.Active(first, MockLocationEngine.LOCATION_MANAGER)
         runCurrent()
         assertEquals(first, fixture.repository.recents.value.single().point)
+        assertEquals(MockLocationEngine.LOCATION_MANAGER, fixture.viewModel.uiState.value.activeEngine)
 
         fixture.viewModel.selectPoint(second)
         assertEquals(listOf(second), fixture.controller.updates)

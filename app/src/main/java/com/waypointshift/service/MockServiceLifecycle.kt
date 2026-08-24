@@ -85,8 +85,8 @@ class MockServiceLifecycle(
             is MockPublisherStatus.Starting -> statusStore.update(MockServiceStatus.Starting(status.point))
             is MockPublisherStatus.Active -> {
                 lastPoint = status.point
-                statusStore.update(MockServiceStatus.Active(status.point))
-                callbacks.showActive(status.point)
+                statusStore.update(MockServiceStatus.Active(status.point, status.engine))
+                callbacks.showActive(status.point, status.engine)
             }
             is MockPublisherStatus.Failed -> {
                 terminalFailure = status.failure
@@ -99,7 +99,7 @@ class MockServiceLifecycle(
 
     interface Callbacks {
         fun showPreparing(point: GeoPoint)
-        fun showActive(point: GeoPoint)
+        fun showActive(point: GeoPoint, engine: com.waypointshift.mock.MockLocationEngine)
         fun removeForeground()
         fun requestStopSelf(startId: Int)
         fun logFailure(error: Throwable)

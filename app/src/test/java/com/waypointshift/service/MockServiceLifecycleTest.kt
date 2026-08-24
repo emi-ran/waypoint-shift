@@ -2,6 +2,7 @@ package com.waypointshift.service
 
 import com.waypointshift.mock.MockClientOperation
 import com.waypointshift.mock.MockFailureKind
+import com.waypointshift.mock.MockLocationEngine
 import com.waypointshift.mock.MockPublisher
 import com.waypointshift.mock.MockPublisherStatus
 import com.waypointshift.mock.MockSessionFailure
@@ -31,10 +32,10 @@ class MockServiceLifecycleTest {
         runCurrent()
         assertEquals(listOf(point), publisher.starts)
 
-        publisher.mutableStatus.value = MockPublisherStatus.Active(point)
+        publisher.mutableStatus.value = MockPublisherStatus.Active(point, MockLocationEngine.FUSED)
         runCurrent()
-        assertEquals("active:$point", callbacks.events.last())
-        assertEquals(MockServiceStatus.Active(point), statusStore.status.value)
+        assertEquals("active:$point:${MockLocationEngine.FUSED}", callbacks.events.last())
+        assertEquals(MockServiceStatus.Active(point, MockLocationEngine.FUSED), statusStore.status.value)
     }
 
     @Test
@@ -120,8 +121,8 @@ class MockServiceLifecycleTest {
             events += "preparing:$point"
         }
 
-        override fun showActive(point: GeoPoint) {
-            events += "active:$point"
+        override fun showActive(point: GeoPoint, engine: MockLocationEngine) {
+            events += "active:$point:$engine"
         }
 
         override fun removeForeground() {

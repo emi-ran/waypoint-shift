@@ -24,6 +24,7 @@ data class MainUiState(
     val setupSeen: Boolean = false,
     val mockLocationAccess: MockLocationAccess = MockLocationAccess.UNKNOWN,
     val sessionState: SessionState = SessionState.Inactive,
+    val activeEngine: com.waypointshift.mock.MockLocationEngine? = null,
     val errorMessage: String? = null,
     val showSetupAction: Boolean = false,
 ) {

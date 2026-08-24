@@ -1,11 +1,14 @@
 package com.waypointshift
 
 import android.content.Context
+import android.location.LocationManager
 import com.waypointshift.data.LocationRepository
 import com.waypointshift.data.LocationRepositoryImpl
 import com.waypointshift.data.PreferencesLocationPreferencesStorage
 import com.waypointshift.mock.GoogleMockLocationClient
 import com.waypointshift.mock.AndroidMockLocationAccessChecker
+import com.waypointshift.mock.FallbackMockLocationClient
+import com.waypointshift.mock.LocationManagerMockLocationClient
 import com.waypointshift.mock.MockLocationClient
 import com.waypointshift.service.MockServiceControl
 import com.waypointshift.service.MockServiceController
@@ -30,5 +33,11 @@ class AppContainer(
     )
 
     fun createMockLocationClient(): MockLocationClient =
-        GoogleMockLocationClient(applicationContext)
+        FallbackMockLocationClient(
+            fusedClient = GoogleMockLocationClient(applicationContext),
+            locationManagerClient = LocationManagerMockLocationClient(
+                applicationContext.getSystemService(LocationManager::class.java),
+            ),
+            accessChecker = mockLocationAccessChecker,
+        )
 }

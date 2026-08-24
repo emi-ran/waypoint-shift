@@ -191,7 +191,14 @@ class MainViewModel(
             }
             is MockServiceStatus.Starting -> update { copy(sessionState = SessionState.Starting) }
             is MockServiceStatus.Active -> {
-                update { copy(sessionState = SessionState.Active, errorMessage = null, showSetupAction = false) }
+                update {
+                    copy(
+                        sessionState = SessionState.Active,
+                        activeEngine = status.engine,
+                        errorMessage = null,
+                        showSetupAction = false,
+                    )
+                }
                 val point = pendingRecent?.takeIf { it == status.point }
                 if (point != null && recentRecordJob?.isActive != true) {
                     pendingRecent = null

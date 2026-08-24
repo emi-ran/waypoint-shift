@@ -8,6 +8,7 @@ import androidx.core.app.ServiceCompat
 import com.waypointshift.WaypointShiftApplication
 import com.waypointshift.mock.MockLocationPublisher
 import com.waypointshift.model.GeoPoint
+import com.waypointshift.mock.MockLocationEngine
 import com.waypointshift.notifications.MockLocationNotificationFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +59,7 @@ class MockLocationService : Service(), MockServiceLifecycle.Callbacks {
         )
     }
 
-    override fun showActive(point: GeoPoint) {
+    override fun showActive(point: GeoPoint, engine: MockLocationEngine) {
         startForeground(
             MockLocationNotificationFactory.NOTIFICATION_ID,
             notifications.active(point),
