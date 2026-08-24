@@ -93,7 +93,7 @@ fun WaypointShiftApp(
                 onMapPointSelected = onMapPointSelected,
                 onMarkerPreview = onMarkerPreview,
                 onMarkerDragEnd = onMarkerDragEnd,
-                modifier = Modifier.fillMaxWidth().height(300.dp),
+                modifier = Modifier.fillMaxWidth().height(220.dp),
             )
             CoordinateControls(
                 state = state,
