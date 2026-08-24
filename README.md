@@ -4,16 +4,20 @@ Waypoint Shift is an Android mock-location tool built around official Android an
 
 ## Current scope
 
-Repository currently contains Phase 0/1 foundation only:
+Repository contains Phase 0, Phase 1, and Phase 2 foundation:
 
 - Android API 36 app bootstrap with Kotlin, Jetpack Compose, and Material 3
 - Gradle 9.5.0 wrapper with pinned distribution checksum
 - Local light/dark Compose theme and placeholder launch screen
 - Validated `GeoPoint` domain model with locale-independent signed decimal parsing, including trailing decimal points, and six-decimal formatting
-- Unit tests for coordinate boundaries, malformed text, and non-finite values
-- Backup exclusions prepared for future local coordinate preferences
+- Local favorites and recents persistence via Preferences DataStore and Kotlin Serialization
+  - Explicit v1 disk DTOs ignoring unknown fields
+  - Graceful recovery from malformed JSON without crashing startup
+  - Favorites CRUD with stable-ID uniqueness and 60-code-point label truncation
+  - Recents deduplicated by 6-decimal normalized coordinates, newest-first, capped at 20 entries
+- Unit and integration tests covering domain models, serialization, and DataStore persistence
 
-Map UI, favorites, mock-location publication, and foreground service are not implemented yet.
+Map UI, mock-location publication, and foreground service are not implemented yet.
 
 ## Requirements
 
