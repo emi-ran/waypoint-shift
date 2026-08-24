@@ -2,23 +2,40 @@ package com.waypointshift.data
 
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.model.SavedLocation
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class LocationRepositoryImpl(
     private val storage: LocationPreferencesStorage,
+    scope: CoroutineScope,
     private val onStorageError: ((Throwable) -> Unit)? = null,
 ) : LocationRepository {
 
-    override val favorites: Flow<List<SavedLocation>> = storage.favoritesJson.map { raw ->
-        LocationDiskDto.decodeList(raw, onStorageError)
-    }
+    override val favorites: StateFlow<List<SavedLocation>> = storage.favoritesJson
+        .map { raw -> LocationDiskDto.decodeList(raw, onStorageError) }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList(),
+        )
 
-    override val recents: Flow<List<SavedLocation>> = storage.recentsJson.map { raw ->
-        LocationDiskDto.decodeList(raw, onStorageError)
-    }
+    override val recents: StateFlow<List<SavedLocation>> = storage.recentsJson
+        .map { raw -> LocationDiskDto.decodeList(raw, onStorageError) }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList(),
+        )
 
-    override val onboardingSeen: Flow<Boolean> = storage.onboardingSeen
+    override val onboardingSeen: StateFlow<Boolean> = storage.onboardingSeen
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
 
     override suspend fun saveFavorite(
         id: String,
@@ -26,17 +43,32 @@ class LocationRepositoryImpl(
         point: GeoPoint,
         timestampEpochMillis: Long,
     ): SavedLocation {
+        require(id.isNotBlank()) { "Favorite ID cannot be blank" }
+
         val trimmedLabel = normalizeLabel(label)
-        val item = SavedLocation(
-            id = id,
-            label = trimmedLabel,
-            point = point,
-            createdAtEpochMillis = timestampEpochMillis,
-        )
+        var resultItem: SavedLocation? = null
 
         storage.updateFavorites { raw ->
             val current = LocationDiskDto.decodeList(raw, onStorageError)
             val index = current.indexOfFirst { it.id == id }
+            val item = if (index >= 0) {
+                SavedLocation(
+                    id = id,
+                    label = trimmedLabel,
+                    point = point,
+                    createdAtEpochMillis = current[index].createdAtEpochMillis,
+                    lastUsedAtEpochMillis = timestampEpochMillis,
+                )
+            } else {
+                SavedLocation(
+                    id = id,
+                    label = trimmedLabel,
+                    point = point,
+                    createdAtEpochMillis = timestampEpochMillis,
+                    lastUsedAtEpochMillis = timestampEpochMillis,
+                )
+            }
+            resultItem = item
             val updated = if (index >= 0) {
                 current.toMutableList().apply { set(index, item) }
             } else {
@@ -45,7 +77,7 @@ class LocationRepositoryImpl(
             LocationDiskDto.encodeList(updated)
         }
 
-        return item
+        return checkNotNull(resultItem)
     }
 
     private fun normalizeLabel(label: String?): String? {
@@ -60,6 +92,7 @@ class LocationRepositoryImpl(
     }
 
     override suspend fun deleteFavorite(id: String) {
+        require(id.isNotBlank()) { "Favorite ID cannot be blank" }
         storage.updateFavorites { raw ->
             val current = LocationDiskDto.decodeList(raw, onStorageError)
             val updated = current.filterNot { it.id == id }
@@ -72,15 +105,25 @@ class LocationRepositoryImpl(
             latitude = point.formattedLatitude.toDouble(),
             longitude = point.formattedLongitude.toDouble(),
         )
-        val item = SavedLocation(
-            id = "recent-${normalizedPoint.formattedLatitude}-${normalizedPoint.formattedLongitude}",
-            label = null,
-            point = normalizedPoint,
-            createdAtEpochMillis = timestampEpochMillis,
-        )
+
+        var resultItem: SavedLocation? = null
 
         storage.updateRecents { raw ->
             val current = LocationDiskDto.decodeList(raw, onStorageError)
+            val existing = current.firstOrNull {
+                it.point.formattedLatitude == normalizedPoint.formattedLatitude &&
+                    it.point.formattedLongitude == normalizedPoint.formattedLongitude
+            }
+
+            val item = SavedLocation(
+                id = existing?.id ?: "recent-${normalizedPoint.formattedLatitude}-${normalizedPoint.formattedLongitude}",
+                label = null,
+                point = normalizedPoint,
+                createdAtEpochMillis = existing?.createdAtEpochMillis ?: timestampEpochMillis,
+                lastUsedAtEpochMillis = timestampEpochMillis,
+            )
+            resultItem = item
+
             val filtered = current.filterNot {
                 it.point.formattedLatitude == normalizedPoint.formattedLatitude &&
                     it.point.formattedLongitude == normalizedPoint.formattedLongitude
@@ -89,7 +132,7 @@ class LocationRepositoryImpl(
             LocationDiskDto.encodeList(updated)
         }
 
-        return item
+        return checkNotNull(resultItem)
     }
 
     override suspend fun clearRecents() {

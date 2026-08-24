@@ -5,4 +5,5 @@ data class SavedLocation(
     val label: String? = null,
     val point: GeoPoint,
     val createdAtEpochMillis: Long,
+    val lastUsedAtEpochMillis: Long = createdAtEpochMillis,
 )

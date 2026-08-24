@@ -36,7 +36,10 @@ class LocationPreferencesDataStoreTest {
             produceFile = { testFile },
         )
         val storage1 = PreferencesLocationPreferencesStorage(dataStore1)
-        val repository1 = LocationRepositoryImpl(storage1)
+        val repository1 = LocationRepositoryImpl(
+            storage = storage1,
+            scope = dataStoreScope1,
+        )
 
         val point = GeoPoint.of(41.015137, 28.979530)
         repository1.saveFavorite("fav-1", "Sultanahmet", point, 1000L)
@@ -52,11 +55,14 @@ class LocationPreferencesDataStoreTest {
             produceFile = { testFile },
         )
         val storage2 = PreferencesLocationPreferencesStorage(dataStore2)
-        val repository2 = LocationRepositoryImpl(storage2)
+        val repository2 = LocationRepositoryImpl(
+            storage = storage2,
+            scope = dataStoreScope2,
+        )
 
-        val favorites = repository2.favorites.first()
-        val recents = repository2.recents.first()
-        val onboardingSeen = repository2.onboardingSeen.first()
+        val favorites = repository2.favorites.first { it.isNotEmpty() }
+        val recents = repository2.recents.first { it.isNotEmpty() }
+        val onboardingSeen = repository2.onboardingSeen.first { it }
 
         assertEquals(1, favorites.size)
         assertEquals("fav-1", favorites.first().id)
@@ -91,10 +97,12 @@ class LocationPreferencesDataStoreTest {
         val storage = PreferencesLocationPreferencesStorage(dataStore)
         val repository = LocationRepositoryImpl(
             storage = storage,
+            scope = dataStoreScope,
             onStorageError = { errorReported = it },
         )
 
         val favorites = repository.favorites.first()
+        testScheduler.advanceUntilIdle()
         assertEquals(emptyList<com.waypointshift.model.SavedLocation>(), favorites)
         assertNotNull(errorReported)
 

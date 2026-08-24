@@ -2,17 +2,15 @@ package com.waypointshift.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "waypoint_shift_preferences")
 
 class PreferencesLocationPreferencesStorage(
     private val dataStore: DataStore<Preferences>,
@@ -65,13 +63,7 @@ class PreferencesLocationPreferencesStorage(
         val RECENTS_JSON_KEY = stringPreferencesKey("recents_json_v1")
         val ONBOARDING_SEEN_KEY = booleanPreferencesKey("onboarding_seen_v1")
 
-        fun createDataStore(
-            context: Context,
-            name: String = "waypoint_shift_preferences",
-            scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
-        ): DataStore<Preferences> = PreferenceDataStoreFactory.create(
-            scope = scope,
-            produceFile = { context.preferencesDataStoreFile(name) },
-        )
+        fun fromContext(context: Context): PreferencesLocationPreferencesStorage =
+            PreferencesLocationPreferencesStorage(context.applicationContext.dataStore)
     }
 }

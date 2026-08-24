@@ -3,6 +3,7 @@ package com.waypointshift.data
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.model.SavedLocation
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface LocationPreferencesStorage {
     val favoritesJson: Flow<String?>
@@ -15,9 +16,9 @@ interface LocationPreferencesStorage {
 }
 
 interface LocationRepository {
-    val favorites: Flow<List<SavedLocation>>
-    val recents: Flow<List<SavedLocation>>
-    val onboardingSeen: Flow<Boolean>
+    val favorites: StateFlow<List<SavedLocation>>
+    val recents: StateFlow<List<SavedLocation>>
+    val onboardingSeen: StateFlow<Boolean>
 
     suspend fun saveFavorite(
         id: String,

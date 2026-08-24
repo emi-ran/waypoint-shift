@@ -13,12 +13,14 @@ internal data class LocationDiskDtoV1(
     val latitude: Double,
     val longitude: Double,
     val createdAtEpochMillis: Long,
+    val lastUsedAtEpochMillis: Long? = null,
 ) {
     fun toDomain(): SavedLocation = SavedLocation(
         id = id,
         label = label,
         point = GeoPoint.of(latitude, longitude),
         createdAtEpochMillis = createdAtEpochMillis,
+        lastUsedAtEpochMillis = lastUsedAtEpochMillis ?: createdAtEpochMillis,
     )
 
     companion object {
@@ -28,6 +30,7 @@ internal data class LocationDiskDtoV1(
             latitude = location.point.latitude,
             longitude = location.point.longitude,
             createdAtEpochMillis = location.createdAtEpochMillis,
+            lastUsedAtEpochMillis = location.lastUsedAtEpochMillis,
         )
     }
 }
