@@ -25,6 +25,7 @@
 - Favorite updates and repeated recent selections now preserve original creation time while recording latest use time.
 - Application DataStore access now uses one process-wide delegated instance.
 - Repository mutations return only after public `StateFlow` snapshots reflect committed storage state.
+- Initial setup now checks Android's current mock-location AppOp where permitted, avoids repeating selection instructions after successful Return and retry, and reports separate actionable diagnostics for denied AppOp, unavailable Google Play services, Fused provider failures, and foreground-service start failures.
 
 ### Privacy
 

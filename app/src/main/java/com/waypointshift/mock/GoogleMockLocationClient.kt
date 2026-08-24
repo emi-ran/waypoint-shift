@@ -34,10 +34,23 @@ interface MockLocationGateway {
 
 class GoogleMockLocationClient(
     private val gateway: MockLocationGateway,
+    private val accessChecker: MockLocationAccessChecker = MockLocationAccessChecker {
+        MockLocationAccess.UNKNOWN
+    },
 ) : MockLocationClient {
-    constructor(context: Context) : this(AndroidMockLocationGateway(context.applicationContext))
+    constructor(context: Context) : this(
+        gateway = AndroidMockLocationGateway(context.applicationContext),
+        accessChecker = AndroidMockLocationAccessChecker(context.applicationContext),
+    )
 
     override suspend fun enable() {
+        if (accessChecker.check() == MockLocationAccess.NOT_ALLOWED) {
+            throw MockLocationClientException(
+                kind = MockFailureKind.APP_OP_NOT_ALLOWED,
+                operation = MockClientOperation.ENABLE,
+                cause = SecurityException("Mock-location AppOp is not allowed"),
+            )
+        }
         if (gateway.playServicesAvailability() != ConnectionResult.SUCCESS) {
             throw MockLocationClientException(
                 kind = MockFailureKind.PLAY_SERVICES_UNAVAILABLE,
@@ -76,7 +89,6 @@ class GoogleMockLocationClient(
         } catch (error: Throwable) {
             throw MockLocationClientException(
                 kind = when {
-                    error.hasSecurityCause() -> MockFailureKind.SETUP_REQUIRED
                     operation == MockClientOperation.ENABLE -> MockFailureKind.ENABLE_FAILED
                     operation == MockClientOperation.PUBLISH -> MockFailureKind.PUBLISH_FAILED
                     else -> MockFailureKind.DISABLE_FAILED
@@ -86,9 +98,6 @@ class GoogleMockLocationClient(
             )
         }
     }
-
-    private fun Throwable.hasSecurityCause(): Boolean =
-        generateSequence(this) { it.cause }.any { it is SecurityException }
 }
 
 private class AndroidMockLocationGateway(context: Context) : MockLocationGateway {

@@ -4,6 +4,8 @@ import com.waypointshift.data.InMemoryLocationPreferencesStorage
 import com.waypointshift.data.LocationRepositoryImpl
 import com.waypointshift.mock.MockClientOperation
 import com.waypointshift.mock.MockFailureKind
+import com.waypointshift.mock.MockLocationAccess
+import com.waypointshift.mock.MockLocationAccessChecker
 import com.waypointshift.mock.MockSessionFailure
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.service.MockServiceControl
@@ -52,6 +54,66 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `allowed mock-location app-op avoids onboarding prompt and enables start`() = runTest {
+        val fixture = fixture(access = MockLocationAccess.ALLOWED)
+        val point = GeoPoint.of(41.0, 29.0)
+        fixture.viewModel.selectPoint(point)
+        runCurrent()
+
+        assertFalse(fixture.viewModel.uiState.value.setupSeen)
+        assertEquals(MockLocationAccess.ALLOWED, fixture.viewModel.uiState.value.mockLocationAccess)
+        assertFalse(fixture.viewModel.uiState.value.showSetupAction)
+        assertTrue(fixture.viewModel.uiState.value.canStart)
+
+        fixture.viewModel.start()
+        assertEquals(listOf(point), fixture.controller.starts)
+    }
+
+    @Test
+    fun `denied mock-location app-op blocks service start with actionable diagnostic`() = runTest {
+        val fixture = fixture(access = MockLocationAccess.NOT_ALLOWED)
+        fixture.viewModel.selectPoint(GeoPoint.of(41.0, 29.0))
+        runCurrent()
+
+        assertEquals(SessionState.Failed, fixture.viewModel.uiState.value.sessionState)
+        assertTrue(fixture.viewModel.uiState.value.showSetupAction)
+
+        fixture.viewModel.start()
+
+        assertTrue(fixture.controller.starts.isEmpty())
+        assertTrue(fixture.viewModel.uiState.value.showSetupAction)
+        assertEquals(
+            "Android has not allowed mock location for Waypoint Shift. Open Developer Options, choose Waypoint Shift under Select mock location app, then return and retry.",
+            fixture.viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `retry after app-op becomes allowed closes setup without repeating selection warning`() = runTest {
+        val fixture = fixture(access = MockLocationAccess.NOT_ALLOWED)
+        fixture.access.value = MockLocationAccess.ALLOWED
+
+        assertTrue(fixture.viewModel.confirmMockLocationSetup())
+        runCurrent()
+
+        assertTrue(fixture.viewModel.uiState.value.setupSeen)
+        assertFalse(fixture.viewModel.uiState.value.showSetupAction)
+        assertNull(fixture.viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `unknown app-op keeps informational onboarding fallback`() = runTest {
+        val fixture = fixture(access = MockLocationAccess.UNKNOWN)
+
+        assertFalse(fixture.viewModel.uiState.value.setupSeen)
+        assertEquals(MockLocationAccess.UNKNOWN, fixture.viewModel.uiState.value.mockLocationAccess)
+
+        assertTrue(fixture.viewModel.confirmMockLocationSetup())
+        runCurrent()
+        assertTrue(fixture.viewModel.uiState.value.setupSeen)
+    }
+
+    @Test
     fun `marker preview does not update active service until drag commits`() = runTest {
         val fixture = fixture()
         val active = GeoPoint.of(41.0, 29.0)
@@ -92,14 +154,14 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `setup failure preserves selection and exposes setup action`() = runTest {
+    fun `app-op failure preserves selection and exposes setup action`() = runTest {
         val fixture = fixture()
         val point = GeoPoint.of(41.0, 29.0)
         fixture.viewModel.selectPoint(point)
         val cause = SecurityException("not selected")
         fixture.controller.status.value = MockServiceStatus.Failed(
             MockSessionFailure(
-                kind = MockFailureKind.SETUP_REQUIRED,
+                kind = MockFailureKind.APP_OP_NOT_ALLOWED,
                 operation = MockClientOperation.ENABLE,
                 cleanupFailed = false,
                 cause = cause,
@@ -109,7 +171,50 @@ class MainViewModelTest {
 
         assertEquals(point, fixture.viewModel.uiState.value.selectedPoint)
         assertTrue(fixture.viewModel.uiState.value.showSetupAction)
-        assertEquals("Select Waypoint Shift as mock location app, then retry", fixture.viewModel.uiState.value.errorMessage)
+        assertEquals(
+            "Android has not allowed mock location for Waypoint Shift. Open Developer Options, choose Waypoint Shift under Select mock location app, then return and retry.",
+            fixture.viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `Play services and Fused failures have distinct diagnostics`() = runTest {
+        val fixture = fixture()
+
+        fixture.controller.status.value = MockServiceStatus.Failed(
+            failure(MockFailureKind.PLAY_SERVICES_UNAVAILABLE),
+        )
+        runCurrent()
+        assertEquals(
+            "Google Play services is missing, disabled, or outdated. Repair Google Play services, then retry.",
+            fixture.viewModel.uiState.value.errorMessage,
+        )
+
+        fixture.controller.status.value = MockServiceStatus.Failed(
+            failure(MockFailureKind.ENABLE_FAILED),
+        )
+        runCurrent()
+        assertEquals(
+            "Fused Location Provider could not enable mock mode. Check Google Play services and device restrictions, then retry.",
+            fixture.viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `foreground-service start failure is reported separately`() = runTest {
+        val fixture = fixture()
+        fixture.controller.startFailure = IllegalStateException("background start blocked")
+        fixture.viewModel.selectPoint(GeoPoint.of(41.0, 29.0))
+        fixture.viewModel.markSetupSeen()
+        runCurrent()
+
+        fixture.viewModel.start()
+
+        assertEquals(
+            "Android could not start the visible mock-location service. Keep Waypoint Shift in the foreground and retry.",
+            fixture.viewModel.uiState.value.errorMessage,
+        )
+        assertFalse(fixture.viewModel.uiState.value.showSetupAction)
     }
 
     @Test
@@ -136,32 +241,45 @@ class MainViewModelTest {
         assertNull(fixture.viewModel.uiState.value.errorMessage)
     }
 
-    private fun kotlinx.coroutines.test.TestScope.fixture(): Fixture {
+    private fun kotlinx.coroutines.test.TestScope.fixture(
+        access: MockLocationAccess = MockLocationAccess.UNKNOWN,
+    ): Fixture {
         val repository = LocationRepositoryImpl(InMemoryLocationPreferencesStorage(), backgroundScope)
         val controller = FakeController()
+        val accessChecker = FakeAccessChecker(access)
         val viewModel = MainViewModel(
             repository = repository,
             serviceController = controller,
+            mockLocationAccessChecker = accessChecker,
             scope = backgroundScope,
             nowEpochMillis = { 1_000L },
             favoriteId = { "favorite-1" },
         )
-        return Fixture(repository, controller, viewModel)
+        return Fixture(repository, controller, accessChecker, viewModel)
     }
 
     private data class Fixture(
         val repository: LocationRepositoryImpl,
         val controller: FakeController,
+        val access: FakeAccessChecker,
         val viewModel: MainViewModel,
     )
+
+    private class FakeAccessChecker(initial: MockLocationAccess) : MockLocationAccessChecker {
+        var value = initial
+
+        override fun check(): MockLocationAccess = value
+    }
 
     private class FakeController : MockServiceControl {
         override val status = MutableStateFlow<MockServiceStatus>(MockServiceStatus.Inactive)
         val starts = mutableListOf<GeoPoint>()
         val updates = mutableListOf<GeoPoint>()
         var stops = 0
+        var startFailure: RuntimeException? = null
 
         override fun start(point: GeoPoint) {
+            startFailure?.let { throw it }
             starts += point
         }
 
@@ -173,4 +291,11 @@ class MainViewModelTest {
             stops++
         }
     }
+
+    private fun failure(kind: MockFailureKind) = MockSessionFailure(
+        kind = kind,
+        operation = MockClientOperation.ENABLE,
+        cleanupFailed = false,
+        cause = IllegalStateException(kind.name),
+    )
 }

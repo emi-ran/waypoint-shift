@@ -66,9 +66,10 @@ class WaypointShiftAppTest {
             )
         }
 
+        composeRule.onNodeWithText("If Android reports access is not allowed:").assertIsDisplayed()
         composeRule.onNodeWithText("1. Open Developer Options.").assertIsDisplayed()
-        composeRule.onNodeWithText("2. Choose Select mock location app.").assertIsDisplayed()
-        composeRule.onNodeWithText("3. Select Waypoint Shift, return, then retry.").assertIsDisplayed()
+        composeRule.onNodeWithText("2. Under Select mock location app, choose Waypoint Shift.").assertIsDisplayed()
+        composeRule.onNodeWithText("3. Return here and retry. Waypoint Shift checks Android's current permission before Start.").assertIsDisplayed()
         composeRule.onNodeWithText("Mock locations remain visible to Android and other apps.").assertIsDisplayed()
         composeRule.onNodeWithText("Open Developer Options").assertIsDisplayed()
         composeRule.onNodeWithText("Return and retry").assertIsDisplayed()
@@ -91,6 +92,21 @@ class WaypointShiftAppTest {
         composeRule.onNodeWithText("Notification permission required").assertIsDisplayed()
         composeRule.onNodeWithText("Waypoint Shift requires notification permission before Start so active mocking stays clearly visible.").assertIsDisplayed()
         composeRule.onNodeWithText("Continue").assertIsDisplayed()
+    }
+
+    @Test
+    fun deniedAppOpDiagnosticIsActionableAndVisible() {
+        composeRule.setContent {
+            WaypointShiftApp(
+                state = MainUiState(
+                    errorMessage = "Android has not allowed mock location for Waypoint Shift. Open Developer Options, choose Waypoint Shift under Select mock location app, then return and retry.",
+                ),
+            )
+        }
+
+        composeRule.onNodeWithText(
+            "Android has not allowed mock location for Waypoint Shift. Open Developer Options, choose Waypoint Shift under Select mock location app, then return and retry.",
+        ).assertIsDisplayed()
     }
 
     @Test

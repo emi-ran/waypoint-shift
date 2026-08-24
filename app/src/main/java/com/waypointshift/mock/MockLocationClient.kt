@@ -21,7 +21,7 @@ enum class MockClientOperation {
 }
 
 enum class MockFailureKind {
-    SETUP_REQUIRED,
+    APP_OP_NOT_ALLOWED,
     PLAY_SERVICES_UNAVAILABLE,
     ENABLE_FAILED,
     PUBLISH_FAILED,

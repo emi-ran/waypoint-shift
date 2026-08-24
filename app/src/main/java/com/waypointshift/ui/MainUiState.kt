@@ -2,6 +2,7 @@ package com.waypointshift.ui
 
 import com.waypointshift.model.GeoPoint
 import com.waypointshift.model.SavedLocation
+import com.waypointshift.mock.MockLocationAccess
 
 enum class SessionState {
     Inactive,
@@ -21,6 +22,7 @@ data class MainUiState(
     val favorites: List<SavedLocation> = emptyList(),
     val recents: List<SavedLocation> = emptyList(),
     val setupSeen: Boolean = false,
+    val mockLocationAccess: MockLocationAccess = MockLocationAccess.UNKNOWN,
     val sessionState: SessionState = SessionState.Inactive,
     val errorMessage: String? = null,
     val showSetupAction: Boolean = false,
@@ -30,7 +32,9 @@ data class MainUiState(
             latitudeError == null && longitudeError == null
 
     val canStart: Boolean
-        get() = selectedPoint != null && setupSeen &&
+        get() = selectedPoint != null &&
+            mockLocationAccess != MockLocationAccess.NOT_ALLOWED &&
+            (setupSeen || mockLocationAccess == MockLocationAccess.ALLOWED) &&
             (sessionState == SessionState.Inactive || sessionState == SessionState.Failed)
 
     val canStop: Boolean

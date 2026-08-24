@@ -10,7 +10,7 @@ Waypoint Shift is a transparent, no-root Android mock-location tool using offici
 - One-second fused mock-location publication through a user-visible foreground service
 - Ongoing notification showing exact active coordinate and Stop action
 - Local favorites with optional labels plus bounded, deduplicated recents
-- Developer Options onboarding and actionable mock-app selection failure flow
+- Supported AppOps-based mock-app status check plus actionable, distinct setup, Play services, Fused provider, and foreground-service diagnostics
 - Android 13+ notification permission gate before mocking starts
 - Local coordinate storage excluded from Android backup
 
@@ -47,7 +47,7 @@ Restrict Maps key to package `com.waypointshift`, expected signing certificate f
 4. On Android 13+, grant notification permission when prompted. App blocks Start when permission is denied so active mocking remains visible.
 5. Select coordinate through map or manual fields, then tap **Start**.
 
-App opens public Developer Options screen but never reads or changes secure settings. Successful Google Play services mock-mode call determines whether setup is valid.
+App opens public Developer Options screen but never changes settings. It safely checks its own public mock-location AppOp before Start where Android permits that query, then confirms access through Google Play services mock mode. If status cannot be queried, transparent manual onboarding remains available.
 
 ## Build and test
 

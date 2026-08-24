@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.waypointshift.data.LocationRepository
 import com.waypointshift.mock.MockFailureKind
+import com.waypointshift.mock.MockLocationAccess
+import com.waypointshift.mock.MockLocationAccessChecker
 import com.waypointshift.model.CoordinateComponent
 import com.waypointshift.model.CoordinateErrorReason
 import com.waypointshift.model.GeoPoint
@@ -22,6 +24,9 @@ import kotlinx.coroutines.launch
 class MainViewModel(
     private val repository: LocationRepository,
     private val serviceController: MockServiceControl,
+    private val mockLocationAccessChecker: MockLocationAccessChecker = MockLocationAccessChecker {
+        MockLocationAccess.UNKNOWN
+    },
     scope: CoroutineScope? = null,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val favoriteId: () -> String = { UUID.randomUUID().toString() },
@@ -38,6 +43,7 @@ class MainViewModel(
         coroutineScope.launch { repository.recents.collect { update { copy(recents = it) } } }
         coroutineScope.launch { repository.onboardingSeen.collect { update { copy(setupSeen = it) } } }
         coroutineScope.launch { serviceController.status.collect(::applyServiceStatus) }
+        refreshMockLocationAccess()
     }
 
     fun selectPoint(point: GeoPoint) {
@@ -96,11 +102,52 @@ class MainViewModel(
         coroutineScope.launch { repository.setOnboardingSeen(true) }
     }
 
+    fun confirmMockLocationSetup(): Boolean {
+        val access = mockLocationAccessChecker.check()
+        update { copy(mockLocationAccess = access) }
+        return when (access) {
+            MockLocationAccess.ALLOWED -> {
+                markSetupSeen()
+                update { copy(errorMessage = null, showSetupAction = false) }
+                true
+            }
+            MockLocationAccess.NOT_ALLOWED -> {
+                showAppOpNotAllowed()
+                false
+            }
+            MockLocationAccess.UNKNOWN -> {
+                markSetupSeen()
+                true
+            }
+        }
+    }
+
     fun start() {
         val point = mutableUiState.value.selectedPoint ?: return
+        val access = mockLocationAccessChecker.check()
+        update { copy(mockLocationAccess = access) }
+        when (access) {
+            MockLocationAccess.ALLOWED -> Unit
+            MockLocationAccess.NOT_ALLOWED -> {
+                showAppOpNotAllowed()
+                return
+            }
+            MockLocationAccess.UNKNOWN -> Unit
+        }
         if (!mutableUiState.value.canStart) return
         pendingRecent = point
-        serviceController.start(point)
+        try {
+            serviceController.start(point)
+        } catch (error: RuntimeException) {
+            pendingRecent = null
+            update {
+                copy(
+                    sessionState = SessionState.Failed,
+                    showSetupAction = false,
+                    errorMessage = "Android could not start the visible mock-location service. Keep Waypoint Shift in the foreground and retry.",
+                )
+            }
+        }
     }
 
     fun stop() {
@@ -132,7 +179,15 @@ class MainViewModel(
     private fun applyServiceStatus(status: MockServiceStatus) {
         when (status) {
             MockServiceStatus.Inactive -> update {
-                copy(sessionState = SessionState.Inactive, errorMessage = null, showSetupAction = false)
+                if (mockLocationAccess == MockLocationAccess.NOT_ALLOWED) {
+                    copy(
+                        sessionState = SessionState.Failed,
+                        showSetupAction = true,
+                        errorMessage = MockFailureKind.APP_OP_NOT_ALLOWED.toDiagnosticMessage(),
+                    )
+                } else {
+                    copy(sessionState = SessionState.Inactive, errorMessage = null, showSetupAction = false)
+                }
             }
             is MockServiceStatus.Starting -> update { copy(sessionState = SessionState.Starting) }
             is MockServiceStatus.Active -> {
@@ -146,16 +201,12 @@ class MainViewModel(
             is MockServiceStatus.Stopping -> update { copy(sessionState = SessionState.Stopping) }
             is MockServiceStatus.Failed -> {
                 pendingRecent = null
-                val setupRequired = status.failure.kind == MockFailureKind.SETUP_REQUIRED
+                val setupRequired = status.failure.kind == MockFailureKind.APP_OP_NOT_ALLOWED
                 update {
                     copy(
                         sessionState = SessionState.Failed,
                         showSetupAction = setupRequired,
-                        errorMessage = if (setupRequired) {
-                            "Select Waypoint Shift as mock location app, then retry"
-                        } else {
-                            "Mock location stopped. Check Google Play services and retry"
-                        },
+                        errorMessage = status.failure.kind.toDiagnosticMessage(),
                     )
                 }
             }
@@ -163,6 +214,39 @@ class MainViewModel(
                 copy(sessionState = SessionState.Failed, errorMessage = "Invalid service command")
             }
         }
+    }
+
+    private fun refreshMockLocationAccess() {
+        val access = mockLocationAccessChecker.check()
+        update { copy(mockLocationAccess = access) }
+        when (access) {
+            MockLocationAccess.ALLOWED -> Unit
+            MockLocationAccess.NOT_ALLOWED -> showAppOpNotAllowed()
+            MockLocationAccess.UNKNOWN -> Unit
+        }
+    }
+
+    private fun showAppOpNotAllowed() {
+        update {
+            copy(
+                sessionState = SessionState.Failed,
+                showSetupAction = true,
+                errorMessage = MockFailureKind.APP_OP_NOT_ALLOWED.toDiagnosticMessage(),
+            )
+        }
+    }
+
+    private fun MockFailureKind.toDiagnosticMessage(): String = when (this) {
+        MockFailureKind.APP_OP_NOT_ALLOWED ->
+            "Android has not allowed mock location for Waypoint Shift. Open Developer Options, choose Waypoint Shift under Select mock location app, then return and retry."
+        MockFailureKind.PLAY_SERVICES_UNAVAILABLE ->
+            "Google Play services is missing, disabled, or outdated. Repair Google Play services, then retry."
+        MockFailureKind.ENABLE_FAILED ->
+            "Fused Location Provider could not enable mock mode. Check Google Play services and device restrictions, then retry."
+        MockFailureKind.PUBLISH_FAILED ->
+            "Fused Location Provider stopped publishing the selected mock location. Stop, then retry."
+        MockFailureKind.DISABLE_FAILED ->
+            "Mock mode cleanup failed. Stop Waypoint Shift from Android settings before retrying."
     }
 
     private fun validateComponent(text: String, component: CoordinateComponent): String? {

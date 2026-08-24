@@ -24,7 +24,7 @@ class GoogleMockLocationClientTest {
     }
 
     @Test
-    fun `maps security cause to setup-required failure retaining cause`() = runTest {
+    fun `maps Fused security cause to enable failure retaining cause`() = runTest {
         val cause = SecurityException("not selected")
         val client = GoogleMockLocationClient(RecordingGateway(enableFailure = cause))
 
@@ -32,9 +32,26 @@ class GoogleMockLocationClientTest {
             kotlinx.coroutines.runBlocking { client.enable() }
         }
 
-        assertEquals(MockFailureKind.SETUP_REQUIRED, error.kind)
+        assertEquals(MockFailureKind.ENABLE_FAILED, error.kind)
         assertEquals(MockClientOperation.ENABLE, error.operation)
         assertSame(cause, error.cause)
+    }
+
+    @Test
+    fun `rejects denied mock-location app-op before calling Fused provider`() = runTest {
+        val gateway = RecordingGateway()
+        val client = GoogleMockLocationClient(
+            gateway = gateway,
+            accessChecker = MockLocationAccessChecker { MockLocationAccess.NOT_ALLOWED },
+        )
+
+        val error = assertThrows(MockLocationClientException::class.java) {
+            kotlinx.coroutines.runBlocking { client.enable() }
+        }
+
+        assertEquals(MockFailureKind.APP_OP_NOT_ALLOWED, error.kind)
+        assertEquals(MockClientOperation.ENABLE, error.operation)
+        assertEquals(emptyList<String>(), gateway.calls)
     }
 
     @Test

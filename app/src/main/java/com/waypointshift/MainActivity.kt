@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.waypointshift.ui.MainViewModel
+import com.waypointshift.mock.MockLocationAccess
 import com.waypointshift.ui.SavedLocationsTab
 import com.waypointshift.ui.WaypointShiftApp
 import com.waypointshift.ui.theme.WaypointShiftTheme
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T = MainViewModel(
                     repository = container.locationRepository,
                     serviceController = container.mockServiceController,
+                    mockLocationAccessChecker = container.mockLocationAccessChecker,
                 ) as T
             },
         )[MainViewModel::class.java]
@@ -44,7 +46,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val state by mainViewModel.uiState.collectAsStateWithLifecycle()
-            var showSetup by rememberSaveable { mutableStateOf(!state.setupSeen) }
+            var showSetup by rememberSaveable { mutableStateOf(false) }
             var showNotificationRationale by rememberSaveable { mutableStateOf(false) }
             var savedLocationsTab by rememberSaveable { mutableStateOf<SavedLocationsTab?>(null) }
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -80,14 +82,16 @@ class MainActivity : ComponentActivity() {
                     onHelp = { showSetup = true },
                     onFavorites = { savedLocationsTab = SavedLocationsTab.Favorites },
                     onRecents = { savedLocationsTab = SavedLocationsTab.Recents },
-                    showSetup = showSetup || state.showSetupAction,
+                    showSetup = showSetup || state.showSetupAction ||
+                        (!state.setupSeen && state.mockLocationAccess == MockLocationAccess.UNKNOWN),
                     onOpenDeveloperOptions = {
                         startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
                     },
                     onSetupRetry = {
-                        mainViewModel.markSetupSeen()
-                        showSetup = false
-                        requestTransparentStart()
+                        if (mainViewModel.confirmMockLocationSetup()) {
+                            showSetup = false
+                            requestTransparentStart()
+                        }
                     },
                     onSetupDismiss = { showSetup = false },
                     showNotificationRationale = showNotificationRationale,

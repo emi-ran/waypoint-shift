@@ -103,7 +103,13 @@ fun WaypointShiftApp(
                     enabled = state.selectedPoint != null,
                 ) { Text("Save favorite") }
             }
-            state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            state.errorMessage?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                )
+            }
             val active = state.sessionState == SessionState.Active
             Text(
                 text = if (active) "Mock location active" else "Mock location inactive",
