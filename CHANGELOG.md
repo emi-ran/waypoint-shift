@@ -19,9 +19,11 @@
 - ViewModel-driven map tap, marker drag-end, and validated manual coordinate selection.
 - Developer Options onboarding plus Android 13+ notification permission gate before Start.
 - Local favorite creation, selection, rename, confirmed delete, and recent selection/clear UI.
+- Comprehensive English and Turkish documentation (`README.md` and `README.tr.md`) with setup guides and architecture overviews.
 
 ### Changed
 
+- Removed obsolete Google Maps API key placeholders and cleaned up local properties configuration.
 - Favorite updates and repeated recent selections now preserve original creation time while recording latest use time.
 - Application DataStore access now uses one process-wide delegated instance.
 - Repository mutations return only after public `StateFlow` snapshots reflect committed storage state.

@@ -1,3 +1,3 @@
-# Copy this file to local.properties. Never commit local.properties.
-sdk.dir=/home/your-user/Android/Sdk
-MAPS_API_KEY=YOUR_ANDROID_RESTRICTED_KEY
+# Copy this file to local.properties if you need to manually specify your Android SDK path.
+# Never commit local.properties to version control.
+sdk.dir=/path/to/Android/Sdk
