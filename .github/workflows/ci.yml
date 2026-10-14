@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,11 +38,13 @@ jobs:
 
       - name: Accept Android SDK Licenses & Setup Platform
         run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
           # Avoid yes receiving SIGPIPE under pipefail; still propagate sdkmanager failures.
           set +o pipefail
-          yes | sdkmanager --licenses
+          yes | "$SDKMANAGER" --licenses
           set -o pipefail
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
