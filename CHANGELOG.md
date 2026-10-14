@@ -23,11 +23,17 @@
 
 ### Changed
 
+- Android CI now fails on SDK setup errors, limits job duration and permissions, and uploads test/lint reports on both success and failure.
 - Removed obsolete Google Maps API key placeholders and cleaned up local properties configuration.
 - Favorite updates and repeated recent selections now preserve original creation time while recording latest use time.
 - Application DataStore access now uses one process-wide delegated instance.
 - Repository mutations return only after public `StateFlow` snapshots reflect committed storage state.
 - Initial setup now checks Android's current mock-location AppOp where permitted, avoids repeating selection instructions after successful Return and retry, and reports separate actionable diagnostics for denied AppOp, unavailable Google Play services, Fused provider failures, and foreground-service start failures.
+
+### Fixed
+
+- Android API 23 compatibility for the location-enabled check and address-search URL encoding.
+- Lint-recognized API 31 guards and legacy-compatible provider constants for native mock-location setup, without disabling lint checks.
 
 ### Privacy
 

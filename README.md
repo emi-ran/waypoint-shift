@@ -138,6 +138,12 @@ The output APK will be generated at:
 ./gradlew lintDebug
 ```
 
+### Continuous Integration
+
+GitHub Actions runs unit tests, Android lint, and a debug APK build on pushes and pull requests to `main`, or manually. It uses JDK 17 and installs SDK Platform 36 / Build-Tools 36.0.0; SDK setup and lint errors fail the job.
+
+Successful runs provide `waypoint-shift-debug-apk` (14-day retention). Test and lint reports are uploaded as `test-and-lint-reports` whenever available (7-day retention), including failed runs. This workflow does not publish releases or deploy the app; device/instrumentation testing remains separate.
+
 ---
 
 ## 🔒 Privacy & Ethics

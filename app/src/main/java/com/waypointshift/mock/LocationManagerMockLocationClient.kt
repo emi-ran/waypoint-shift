@@ -1,22 +1,11 @@
 package com.waypointshift.mock
 
+import android.location.Criteria
 import android.location.Location
 import android.location.LocationManager
 import android.location.provider.ProviderProperties
 import android.os.Build
 import com.waypointshift.model.GeoPoint
-
-internal enum class TestProviderApi {
-    LEGACY,
-    PROVIDER_PROPERTIES,
-}
-
-internal fun testProviderApiFor(sdkInt: Int): TestProviderApi =
-    if (sdkInt >= Build.VERSION_CODES.S) {
-        TestProviderApi.PROVIDER_PROPERTIES
-    } else {
-        TestProviderApi.LEGACY
-    }
 
 internal data class TestProviderSpec(
     val name: String,
@@ -107,20 +96,22 @@ internal class LocationManagerMockLocationClient(
 
     private companion object {
         const val MIN_VALID_TIMESTAMP = 1L
+        // Legacy constants are also accepted by ProviderProperties on API 31+.
+        @Suppress("DEPRECATION")
         val PROVIDERS = listOf(
             TestProviderSpec(
                 name = LocationManager.GPS_PROVIDER,
                 requiresNetwork = false,
                 requiresSatellite = true,
-                powerUsage = ProviderProperties.POWER_USAGE_HIGH,
-                accuracy = ProviderProperties.ACCURACY_FINE,
+                powerUsage = Criteria.POWER_HIGH,
+                accuracy = Criteria.ACCURACY_FINE,
             ),
             TestProviderSpec(
                 name = LocationManager.NETWORK_PROVIDER,
                 requiresNetwork = true,
                 requiresSatellite = false,
-                powerUsage = ProviderProperties.POWER_USAGE_LOW,
-                accuracy = ProviderProperties.ACCURACY_COARSE,
+                powerUsage = Criteria.POWER_LOW,
+                accuracy = Criteria.ACCURACY_COARSE,
             ),
         )
     }
@@ -130,7 +121,7 @@ private class AndroidLocationManagerMockGateway(
     private val locationManager: LocationManager,
 ) : LocationManagerMockGateway {
     override fun addTestProvider(spec: TestProviderSpec) {
-        if (testProviderApiFor(Build.VERSION.SDK_INT) == TestProviderApi.PROVIDER_PROPERTIES) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             locationManager.addTestProvider(
                 spec.name,
                 ProviderProperties.Builder()

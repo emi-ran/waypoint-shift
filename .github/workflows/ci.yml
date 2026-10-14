@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,9 +18,7 @@ jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
-
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
+    timeout-minutes: 20
 
     steps:
       - name: Checkout Repository
@@ -34,8 +35,11 @@ jobs:
 
       - name: Accept Android SDK Licenses & Setup Platform
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+          # Avoid yes receiving SIGPIPE under pipefail; still propagate sdkmanager failures.
+          set +o pipefail
+          yes | sdkmanager --licenses
+          set -o pipefail
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -64,12 +68,13 @@ jobs:
           retention-days: 14
 
       - name: Upload Test & Lint Reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-and-lint-reports
           path: |
             app/build/reports/tests/
+            app/build/test-results/
             app/build/reports/lint-results*.html
             app/build/reports/lint-results*.xml
           retention-days: 7

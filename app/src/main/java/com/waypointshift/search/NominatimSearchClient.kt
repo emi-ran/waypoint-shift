@@ -23,7 +23,7 @@ interface PlaceSearchClient {
 class NominatimSearchClient : PlaceSearchClient {
     override suspend fun search(query: String): List<PlaceSearchResult> = withContext(Dispatchers.IO) {
         if (query.trim().length < 3) return@withContext emptyList()
-        val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8)
+        val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.name())
         val connection = (java.net.URL(
             "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=$encoded",
         ).openConnection() as HttpURLConnection).apply {

@@ -20,6 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,7 +89,7 @@ class MainActivity : ComponentActivity() {
 
             fun requestTransparentStart() {
                 val locationManager = getSystemService(LocationManager::class.java)
-                if (!locationManager.isLocationEnabled) {
+                if (!LocationManagerCompat.isLocationEnabled(locationManager)) {
                     showLocationDisabled = true
                     return
                 }

@@ -9,7 +9,7 @@ import org.junit.Test
 
 class LocationManagerMockLocationClientTest {
     @Test
-    fun `enable manages gps and network providers with API-aware specs`() = runTest {
+    fun `enable manages gps and network providers with legacy-compatible specs`() = runTest {
         val gateway = RecordingLocationManagerGateway()
         val client = LocationManagerMockLocationClient(gateway)
 
@@ -19,8 +19,10 @@ class LocationManagerMockLocationClientTest {
         assertTrue(gateway.added.first { it.name == LocationManager.GPS_PROVIDER }.requiresSatellite)
         assertTrue(gateway.added.first { it.name == LocationManager.NETWORK_PROVIDER }.requiresNetwork)
         assertEquals(listOf("gps:true", "network:true"), gateway.enabled)
-        assertEquals(TestProviderApi.LEGACY, testProviderApiFor(30))
-        assertEquals(TestProviderApi.PROVIDER_PROPERTIES, testProviderApiFor(31))
+        assertEquals(3, gateway.added.first { it.name == LocationManager.GPS_PROVIDER }.powerUsage)
+        assertEquals(1, gateway.added.first { it.name == LocationManager.GPS_PROVIDER }.accuracy)
+        assertEquals(1, gateway.added.first { it.name == LocationManager.NETWORK_PROVIDER }.powerUsage)
+        assertEquals(2, gateway.added.first { it.name == LocationManager.NETWORK_PROVIDER }.accuracy)
     }
 
     @Test

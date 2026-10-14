@@ -138,6 +138,12 @@ Derlenen APK dosyası şu dizinde hazır olacaktır:
 ./gradlew lintDebug
 ```
 
+### Sürekli Entegrasyon
+
+GitHub Actions, `main` dalına gönderilen push ve pull request'lerde veya elle tetiklendiğinde birim testleri, Android lint ve debug APK derlemesini çalıştırır. JDK 17 ile SDK Platform 36 / Build-Tools 36.0.0 kullanılır; SDK kurulumu ve lint hataları işi başarısız yapar.
+
+Başarılı koşularda `waypoint-shift-debug-apk` çıktısı 14 gün saklanır. Test ve lint raporları, başarısız koşular dahil mevcut olduklarında `test-and-lint-reports` olarak 7 gün saklanır. Workflow sürüm yayımlamaz veya uygulamayı dağıtmaz; cihaz/enstrümantasyon testleri ayrı yürütülür.
+
 ---
 
 ## 🔒 Gizlilik ve Etik İlkeler
