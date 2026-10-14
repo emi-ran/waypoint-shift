@@ -24,6 +24,7 @@
 ### Changed
 
 - Android CI now fails on SDK setup errors, limits job duration and permissions, and uploads test/lint reports on both success and failure.
+- CI uses maintained GitHub/Gradle actions and Ubuntu 24.04 instead of a moving runner image.
 - Removed obsolete Google Maps API key placeholders and cleaned up local properties configuration.
 - Favorite updates and repeated recent selections now preserve original creation time while recording latest use time.
 - Application DataStore access now uses one process-wide delegated instance.
