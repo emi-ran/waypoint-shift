@@ -7,6 +7,7 @@
 [![Language: English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
 [![Dil: Türkçe](https://img.shields.io/badge/Dil-T%C3%BCrk%C3%A7e-red.svg)](README.tr.md)
 [![Android](https://img.shields.io/badge/Android-API%2023--36-3DDC84.svg?logo=android&logoColor=white)](https://developer.android.com)
+[![Android CI](https://github.com/emi-ran/waypoint-shift/actions/workflows/ci.yml/badge.svg)](https://github.com/emi-ran/waypoint-shift/actions/workflows/ci.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%7C%20Material%203-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![OpenStreetMap](https://img.shields.io/badge/Maps-OpenStreetMap%20%2F%20osmdroid-7EBC6F.svg?logo=openstreetmap&logoColor=white)](https://www.openstreetmap.org)
