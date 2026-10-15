@@ -4,6 +4,8 @@
 
 ### Added
 
+- Signed release workflow triggered by published version-tagged GitHub Releases, with test/lint gates, certificate verification, APK/checksum assets, and manual artifact-only verification.
+- Environment-based PKCS12 release signing that fails closed when signing configuration is missing; keystore files stay outside Git.
 - API 36 Android application foundation using Kotlin, Jetpack Compose, and Material 3.
 - Gradle 9.5.0 wrapper with verified distribution checksum.
 - Validated coordinate value object with canonical six-decimal formatting.

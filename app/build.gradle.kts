@@ -5,6 +5,10 @@ plugins {
 
 }
 
+val releaseSigningFile = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
+fun signingSecret(name: String): String = providers.environmentVariable(name).orNull
+    ?.takeIf { it.isNotBlank() } ?: error("Missing release signing environment variable: $name")
+
 android {
     namespace = "com.waypointshift"
     compileSdk = 36
@@ -22,8 +26,21 @@ android {
 
     }
 
+    signingConfigs {
+        if (releaseSigningFile.isPresent) {
+            create("release") {
+                storeFile = file(releaseSigningFile.get())
+                storeType = "PKCS12"
+                storePassword = signingSecret("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = signingSecret("ANDROID_KEY_ALIAS")
+                keyPassword = signingSecret("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (releaseSigningFile.isPresent) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -49,6 +66,22 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+}
+
+val validateReleaseSigning by tasks.registering {
+    doLast {
+        check(releaseSigningFile.isPresent) { "Release builds require ANDROID_KEYSTORE_PATH and signing credentials." }
+        check(file(releaseSigningFile.get()).isFile) { "Release keystore file does not exist." }
+        providers.environmentVariable("RELEASE_TAG").orNull?.let { tag ->
+            check(tag == "v${android.defaultConfig.versionName}") {
+                "Release tag must match app versionName: v${android.defaultConfig.versionName}"
+            }
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == "preReleaseBuild") dependsOn(validateReleaseSigning)
 }
 
 dependencies {

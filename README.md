@@ -144,6 +144,18 @@ GitHub Actions runs unit tests, Android lint, and a debug APK build on pushes an
 
 Successful runs provide `waypoint-shift-debug-apk` (14-day retention). Test and lint reports are uploaded as `test-and-lint-reports` whenever available (7-day retention), including failed runs. This workflow does not publish releases or deploy the app; device/instrumentation testing remains separate.
 
+### Signed releases
+
+Publishing a GitHub Release with a `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`. The tag must point to a commit on `main` and match `versionName` in `app/build.gradle.kts`. Before each new version, increase `versionCode` and update `versionName`; Android updates require a higher version code and the same signing key.
+
+The `release` GitHub environment allows `v*` tags and requires these secrets: `ANDROID_KEYSTORE_BASE64` (PKCS12 file encoded as Base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. Keep the original keystore outside the repository with encrypted backups. Base64 is not encryption. Do not put credentials in Gradle files or workflow YAML.
+
+The workflow runs tests and debug lint, builds the minified signed release, runs release lint, and verifies the APK signature against the expected certificate SHA-256 fingerprint stored in the workflow. It attaches `waypoint-shift-vX.Y.Z.apk` and its `.sha256` checksum to the published release. A failed build leaves the release without these assets: inspect the reports, fix the cause, and rerun the failed workflow. A temporary keystore is removed after signing and again during cleanup. Normal CI never receives signing secrets.
+
+For verification without publishing, dispatch **Signed Android Release** against an existing version tag using `gh workflow run release.yml --ref v0.1.1`. Manual runs produce downloadable artifacts only; they do not create or modify GitHub Releases. Dispatching on `main` skips the release job. Environment reviewers, if configured, must approve before a job starts. Protect version-tag creation with repository rules/permissions; an environment name pattern alone is not an authorization policy.
+
+Local release builds require `ANDROID_KEYSTORE_PATH` plus the three password/alias environment variables above. Missing signing configuration fails release builds; debug builds do not require secrets. Installing the release over a differently signed debug installation requires uninstalling the debug app first, which removes local app data. Device/instrumentation verification remains separate from CI.
+
 ---
 
 ## 🔒 Privacy & Ethics

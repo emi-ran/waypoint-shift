@@ -144,6 +144,18 @@ GitHub Actions, `main` dalına gönderilen push ve pull request'lerde veya elle 
 
 Başarılı koşularda `waypoint-shift-debug-apk` çıktısı 14 gün saklanır. Test ve lint raporları, başarısız koşular dahil mevcut olduklarında `test-and-lint-reports` olarak 7 gün saklanır. Workflow sürüm yayımlamaz veya uygulamayı dağıtmaz; cihaz/enstrümantasyon testleri ayrı yürütülür.
 
+### İmzalı sürümler
+
+GitHub Release yayımlandığında `.github/workflows/release.yml` çalışır. Etiket `vMAJOR.MINOR.PATCH` biçiminde olmalı, `main` geçmişindeki bir commit'i göstermeli ve `app/build.gradle.kts` içindeki `versionName` ile eşleşmelidir. Her yeni sürümde `versionCode` artırılmalı, `versionName` güncellenmelidir; Android güncellemeleri daha yüksek sürüm kodu ve aynı imzalama anahtarı gerektirir.
+
+GitHub'daki `release` environment, `v*` tag'lerine izin verir ve dört secret kullanır: `ANDROID_KEYSTORE_BASE64` (Base64 kodlu PKCS12 dosyası), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Asıl keystore'u repo dışında ve şifreli yedekleriyle saklayın. Base64 şifreleme değildir; kimlik bilgilerini Gradle veya YAML dosyalarına yazmayın.
+
+Workflow testleri ve debug lint'i çalıştırır, küçültülmüş imzalı release derler, release lint'i çalıştırır ve APK imzasını workflow'daki beklenen sertifika SHA-256 parmak iziyle doğrular. `waypoint-shift-vX.Y.Z.apk` ile `.sha256` dosyasını yayımlanan release'e ekler. Derleme başarısızsa release bu dosyalar olmadan kalır; raporları inceleyip hatayı giderdikten sonra workflow'u yeniden çalıştırın. Geçici keystore imzalamadan sonra ve son temizlik adımında silinir. Normal CI imzalama secret'larına erişmez.
+
+Yayımlamadan doğrulamak için mevcut sürüm tag'inde `gh workflow run release.yml --ref v0.1.1` çalıştırılabilir. Manuel koşu yalnız indirilebilir artifact üretir; GitHub Release oluşturmaz veya değiştirmez. `main` üzerinde manuel tetiklenirse release işi atlanır. Environment onayı açıksa iş başlamadan onay gerekir. Sürüm tag'i oluşturma yetkisini repo kuralları/yetkileriyle sınırlandırın; tag kalıbı tek başına yetkilendirme sağlamaz.
+
+Yerel release derlemesi `ANDROID_KEYSTORE_PATH` ve yukarıdaki üç şifre/alias ortam değişkenini gerektirir. İmzalama ayarları eksikse release derlemesi hata verir; debug derlemesi secret gerektirmez. Farklı anahtarla imzalı debug kurulumdan release'e geçerken debug uygulamasını kaldırmak gerekir; yerel uygulama verileri silinir. Cihaz/enstrümantasyon doğrulaması CI dışında yürütülür.
+
 ---
 
 ## 🔒 Gizlilik ve Etik İlkeler
